@@ -1469,6 +1469,156 @@
       transform: translateY(0);
     }
 
+        /* Editorial Title-Page Home Screen (No AI-slop boxes, no emojis, pure book-grade typography) */
+    .home-screen {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      color: var(--ink);
+      z-index: 95;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: clamp(24px, 5vw, 56px) clamp(24px, 7vw, 96px);
+      overflow-y: auto;
+      transition: opacity var(--transition-fast), visibility var(--transition-fast);
+    }
+
+    .home-screen.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .home-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-strong);
+      padding-bottom: 16px;
+      font-family: var(--font-ui);
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .home-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-heading);
+      font-size: 24px;
+      text-transform: none;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+    }
+
+    .home-main {
+      max-width: 640px;
+      margin: auto 0;
+      padding: 48px 0;
+    }
+
+    .home-kicker {
+      font-family: var(--font-code);
+      font-size: 11.5px;
+      color: var(--accent);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .home-headline {
+      font-family: var(--font-heading);
+      font-size: clamp(40px, 6.2vw, 64px);
+      font-weight: 400;
+      line-height: 1.06;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      margin: 0 0 20px;
+    }
+
+    .home-lead {
+      font-family: var(--font-body);
+      font-size: clamp(17px, 2vw, 20px);
+      line-height: 1.65;
+      color: var(--ink-secondary);
+      margin: 0 0 32px;
+      max-width: 54ch;
+    }
+
+    .home-cta-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .home-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 42px;
+      padding: 0 20px;
+      border-radius: 5px;
+      font-family: var(--font-ui);
+      font-size: 13.5px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid var(--border-strong);
+      background: var(--surface);
+      color: var(--ink);
+      transition: background-color var(--transition-fast), border-color var(--transition-fast);
+    }
+
+    .home-btn:hover {
+      background: var(--surface-hover);
+      border-color: var(--accent);
+    }
+
+    .home-btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--accent-contrast);
+    }
+
+    .home-btn-primary:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+      filter: brightness(1.08);
+    }
+
+    .home-recent-wrap {
+      margin-top: 36px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      max-width: 460px;
+    }
+
+    .home-recent-label {
+      font-family: var(--font-ui);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .home-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      border-top: 1px solid var(--border);
+      padding-top: 16px;
+      font-family: var(--font-ui);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
     /* Responsive Breakpoints */
     @media (max-width: 768px) {
       .outline-sidebar {
@@ -1528,13 +1678,13 @@
           <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>
         </button>
 
-        <button id="brandMarkHome" type="button" class="brand-mark hide-mobile" title="Load Vellum Editorial Guide">
+        <button id="brandMarkHome" type="button" class="brand-mark hide-mobile" title="Return to Vellum Home Screen">
           <span class="brand-dot"></span>
           <span>Vellum</span>
         </button>
 
         <div class="doc-filename-wrap">
-          <input id="docFilenameInput" type="text" class="doc-filename-input" value="editorial-guide.md" aria-label="Document filename" title="Click to rename document" />
+          <input id="docFilenameInput" type="text" class="doc-filename-input" value="untitled.md" aria-label="Document filename" title="Click to rename document" />
           <div id="unsavedIndicator" class="unsaved-indicator" title="Working copy autosaved to browser storage">
             <span class="unsaved-dot"></span>
             <span id="unsavedText" class="hide-mobile">Saved</span>
@@ -1645,12 +1795,53 @@
     </div>
 
     <!-- Main Workspace: Sidebar + Source/Rendered Panes (No Marketing Overlay) -->
+        <!-- Editorial Title-Page Home Screen (No AI-slop boxes, no emojis) -->
+    <section id="homeScreen" class="home-screen" aria-label="Welcome to Vellum">
+      <div class="home-topbar">
+        <div class="home-brand">
+          <span class="brand-dot"></span>
+          <span>Vellum</span>
+        </div>
+        <span>Client-Side Markdown Studio</span>
+      </div>
+
+      <div class="home-main">
+        <div class="home-kicker">Book-Grade Reading &amp; Two-Way Editing</div>
+        <h1 class="home-headline">Write in raw syntax or directly on the typeset page.</h1>
+        <p class="home-lead">Open any local Markdown file from your computer or start a fresh manuscript. Your edits stay in sync across both views, and your files never leave your browser.</p>
+
+        <div class="home-cta-row">
+          <button id="btnHomeStartWriting" type="button" class="home-btn home-btn-primary">
+            <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="M9 15h6"/></svg>
+            <span>New Manuscript</span>
+          </button>
+          <button id="btnHomeOpenFile" type="button" class="home-btn">
+            <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg>
+            <span>Open .md File</span>
+          </button>
+          <button id="btnHomeResumeSession" type="button" class="home-btn" style="display:none;">
+            <span>Continue Working Copy</span>
+          </button>
+        </div>
+
+        <div id="homeRecentWrap" class="home-recent-wrap" style="display:none;">
+          <div class="home-recent-label">Recent Local Files</div>
+          <div id="homeRecentList"></div>
+        </div>
+      </div>
+
+      <div class="home-footer">
+        <span>Drop a <code>.md</code>, <code>.markdown</code>, or <code>.txt</code> file anywhere on the window to begin</span>
+        <span><kbd>Ctrl/Cmd + O</kbd> Open &middot; <kbd>Ctrl/Cmd + S</kbd> Save</span>
+      </div>
+    </section>
+
     <main class="workspace-main">
       <!-- Collapsible Outline & Recent Files Sidebar -->
       <aside id="outlineSidebar" class="outline-sidebar" aria-label="Document Outline and Files">
         <div class="sidebar-tabs" role="tablist">
           <button id="tabBtnOutline" type="button" class="sidebar-tab active" role="tab" aria-selected="true">Outline</button>
-          <button id="tabBtnFiles" type="button" class="sidebar-tab" role="tab" aria-selected="false">Files & Samples</button>
+          <button id="tabBtnFiles" type="button" class="sidebar-tab" role="tab" aria-selected="false">Recent Files</button>
         </div>
 
         <!-- Outline Panel -->
@@ -1658,28 +1849,10 @@
           <ul id="tocList" class="toc-list"></ul>
         </div>
 
-        <!-- Recent Files & Specimens Panel -->
+        <!-- Recent Files Panel -->
         <div id="panelFiles" class="sidebar-panel" role="tabpanel">
           <div class="sidebar-section-label">Recent Local Files</div>
           <div id="recentFilesList"></div>
-
-          <div class="sidebar-section-label" style="margin-top:10px;">Reference Specimens</div>
-          <button id="btnLoadSampleDefault" type="button" class="recent-file-item">
-            <span class="recent-file-name">editorial-guide.md</span>
-            <span class="recent-file-meta">Typography & Two-Way Sync Guide</span>
-          </button>
-          <button id="btnLoadSampleTagalog" type="button" class="recent-file-item">
-            <span class="recent-file-name">tipograpiya-pilipinas.md</span>
-            <span class="recent-file-meta">Filipino / Tagalog Archival Essay</span>
-          </button>
-          <button id="btnLoadSampleEdge" type="button" class="recent-file-item">
-            <span class="recent-file-name">edge-cases-torture.md</span>
-            <span class="recent-file-meta">Nested Lists, Tables & Code w/ MD</span>
-          </button>
-          <button id="btnLoadSampleLarge" type="button" class="recent-file-item">
-            <span class="recent-file-name">benchmark-5200-lines.md</span>
-            <span class="recent-file-meta">5,200+ Lines Stress Test</span>
-          </button>
         </div>
       </aside>
 
@@ -1920,139 +2093,11 @@
       wide: '86ch'
     };
 
-    const DEFAULT_DOCUMENT = `# Vellum — An Editorial Markdown Studio
-
-> "Typography is the craft of endowing human language with a durable visual form." — Robert Bringhurst, *The Elements of Typographic Style*
-
-Welcome to **Vellum**, a client-side Markdown reader and two-way editor designed around book-grade typography and surgical source fidelity. Every paragraph, heading, list, table, and code block in the **Rendered** pane is mapped to its exact line range (\`token.map\`) in the **Source** pane.
-
-Click directly inside any paragraph, heading, list, or blockquote on this page and start typing—your edits update the raw Markdown source on the left in real time while preserving your formatting.
-
-## 1. Two-Way Editing & Line-Range Fidelity
-
-Unlike conventional editors that convert the entire DOM back through a lossy HTML-to-Markdown pass, Vellum updates **only the exact source lines** of the block you touched:
-
-- [x] **Direct Live Rendered Editing:** Click any rendered text block and type directly—the Markdown source updates live as you type.
-- [x] **Surgical Markdown Drawer:** Click the subtle \`L# · Markdown\` badge in the corner of any block (or click a fenced code block) to edit its raw Markdown syntax directly.
-- [ ] **Interactive Task Lists & Tables:** Toggle any checkbox or click any table cell to update that exact line in the source.
-- [ ] **Proportional Scroll Sync:** Scroll either pane in **Split** mode (\`Ctrl/Cmd + 2\`) and the companion pane follows smoothly.
-
-### Typographic Scale & Reading Measure
-
-Long-form writing reads best when lines are held between **60 and 75 characters** with generous leading. Open **Appearance** (\`Ctrl/Cmd + ,\`) in the top bar to adjust:
-
-1. **Curated Font Pairings:** Combine *Newsreader*, *Lora*, or *Fraunces* for prose with *Instrument Serif* or *Plus Jakarta Sans* for headings and *JetBrains Mono* for code.
-2. **Surface Themes:** Switch between **Warm Paper (Light)**, **Archival Vellum (Sepia)**, and **Carbon Ink (Dark)**, paired with five editorial accent colors.
-3. **Measure & Rhythm:** Fine-tune font size (\`14px–24px\`), line height (\`1.4–2.0\`), paragraph spacing, and column width (*Narrow*, *Comfortable*, or *Wide*).
-
-## 2. GitHub Flavored Markdown & Structured Data
-
-Vellum supports full GitHub Flavored Markdown (GFM), including tables with inline formatting, footnotes[^1], ~~strikethrough~~, autolinks like https://commonmark.org, and direct table cell editing.
-
-| View Mode | Primary Focus | Two-Way Sync Behavior | Shortcut |
-| :--- | :--- | :--- | ---: |
-| **Read Mode** | Centered book column with scroll-spy outline | Direct in-place editing | \`Mod + 1\` |
-| **Split Mode** | Side-by-side Source + Rendered panes | Live keystroke & scroll sync | \`Mod + 2\` |
-| **Source Mode** | Full-width syntax-highlighted Markdown editor | Line-numbered buffer | \`Mod + 3\` |
-| **Zen Focus** | Hides all chrome for distraction-free writing | Autosaved locally | \`Mod + \\\\\` |
-
-## 3. Code Blocks & Mathematical Notation
-
-Fenced code blocks are highlighted automatically and follow your active theme. Click any code block in the rendered view to edit its raw fenced code in place:
-
-\`\`\`javascript
-// Surgically splice updated lines into the Markdown source buffer
-function spliceMarkdownBlock(sourceText, startLine, endLine, replacementRaw) {
-  const eol = sourceText.includes('\\r\\n') ? '\\r\\n' : '\\n';
-  const lines = sourceText.split(/\\r?\\n/);
-  return [
-    ...lines.slice(0, startLine),
-    ...replacementRaw.split(/\\r?\\n/),
-    ...lines.slice(endLine)
-  ].join(eol);
-}
-\`\`\`
-
-Vellum also renders inline math such as Euler's identity $e^{i\\pi} + 1 = 0$ and display equations via KaTeX:
-
-$$
-\\mathcal{L}(\\theta) = \\frac{1}{N} \\sum_{i=1}^{N} \\left( y_i - f_\\theta(x_i) \\right)^2 + \\lambda \\|\\theta\\|_2^2
-$$
-
-## 4. Multilingual & Archival Note (Tagalog / Filipino)
-
-*Ang mabuting tipograpiya ay tahimik na naglilingkod sa mambabasa.* Sa pamamagitan ng malinaw na antas ng mga pamagat, tamang agwat ng mga linya, at maingat na pagpili ng kulay, nagiging mas magaan at kasiya-siya ang pagbabasa at pagsusulat ng mahahabang dokumento sa **Vellum**. Maaari kang magbukas ng anumang \`.md\`, \`.markdown\`, o \`.txt\` na talaksan mula sa iyong kompyuter—lahat ng pagbabago ay nananatiling pribado sa iyong browser.
-
-[^1]: Footnotes are automatically linked and collected at the bottom of the rendered page while remaining editable in place.
-`;
-
-    const SAMPLE_TAGALOG = `# Talaan ng Disenyo at Tipograpiya sa Pilipinas
-
-> "Ang wika ay kaluluwa ng isang bansa, at ang tipograpiya ang nagbibigay-katawan dito."
-
-Sa kasaysayan ng paglilimbag sa Pilipinas—mula sa *Doctrina Christiana* noong 1593 hanggang sa makabagong digital na publikasyon sa Bacoor, Maynila, at Cebu—mahalaga ang kalinawan ng bawat titik at tuldik (tulad ng *maragsâ*, *malumì*, at *mabilís*).
-
-## Mga Layunin sa Pagsusuri
-
-- [x] Suportahan ang mga bantas at tuldik sa Filipino (*ngunit*, *datapwat*, *gunita*)
-- [x] Panatilihin ang eksaktong linya sa bawat talata kapag nag-e-edit
-- [ ] Magdagdag ng mga tala para sa baybayin at makabagong ortograpiya
-
-| Rehiyon | Pangunahing Wika | Halimbawa ng Salita | Katangian |
-| :--- | :--- | :--- | :--- |
-| **Calabarzon** | Tagalog | *Maligayang pagdating* | Malumanay at malinaw |
-| **Gitnang Visayas** | Cebuano | *Maayong buntag* | Masigla at matatag |
-| **Ilocos** | Ilokano | *Naimbag nga bigat* | Matipid sa pantig |
-`;
-
-    const SAMPLE_EDGE_CASES = `# Edge Case Torture Test (CRLF, Nested Lists, Code with Markdown)
-
-1. First level ordered item
-   * Second level unordered with \`* \` marker
-     - Third level unordered with \`- \` marker
-       + Fourth level unordered with \`+ \` marker and **bold _nested_ emphasis**
-2. Second ordered item with a task:
-   - [x] Completed nested task
-   - [ ] Pending nested task with \`inline code | pipe\`
-
-\`\`\`markdown
-# This heading is inside a fenced code block
-- [ ] It must NOT be treated as an interactive task list
-| Or | A | Table |
-\`\`\`
-
-| Column with \`\\|\` escaped | Formatting | Math & Code |
-| :--- | :---: | ---: |
-| Cell with **bold** and *italic* | ~~Deleted~~ text | \`x = y + 1\` |
-| Second row | [CommonMark Spec](https://spec.commonmark.org) | $a^2 + b^2 = c^2$ |
-`;
-
-    function generateLargeBenchmarkDoc() {
-      const chunks = [
-        `# High-Volume 5,200+ Line Performance Benchmark\r\n\r\nThis synthetic manuscript contains over **5,200 lines** of Markdown (with CRLF line endings) to verify smooth typing, debounced rendering, and instant surgical block editing.\r\n`
-      ];
-      for (let section = 1; section <= 130; section++) {
-        chunks.push(
-          `## Section ${section}: Architectural & Typographic Notes\r\n\r\n` +
-          `Paragraph ${section}.1 — In editorial systems, line measure and vertical rhythm govern reading endurance. Clicking this paragraph edits lines directly in the 5,200-line buffer without re-serializing unrelated sections.\r\n\r\n` +
-          `- [x] Verified line mapping for Section ${section}\r\n` +
-          `- [ ] Pending review of sub-item ${section}.b\r\n\r\n` +
-          `| Metric | Section ${section} Value | Target Threshold |\r\n` +
-          `| :--- | :---: | ---: |\r\n` +
-          `| Frame Budget | \`< 16ms\` | **60 FPS** |\r\n` +
-          `| Block Splice | \`O(lines)\` | Instant |\r\n\r\n` +
-          `\`\`\`javascript\r\n` +
-          `const sectionIndex = ${section};\r\n` +
-          `console.log("Section", sectionIndex);\r\n` +
-          `\`\`\`\r\n`
-        );
-      }
-      return chunks.join('\r\n');
-    }
+    const DEFAULT_DOCUMENT = '';
 
     // --- State Management ---
     let state = {
-      filename: 'editorial-guide.md',
+      filename: 'untitled.md',
       sourceText: DEFAULT_DOCUMENT,
       savedText: DEFAULT_DOCUMENT,
       fileHandle: null,
@@ -2412,21 +2457,19 @@ Sa kasaysayan ng paglilimbag sa Pilipinas—mula sa *Doctrina Christiana* noong 
           <div class="empty-sheet">
             <div class="empty-sheet-kicker">Blank Manuscript</div>
             <h2 class="empty-sheet-title">Drop a .md file here or begin writing</h2>
-            <p class="empty-sheet-sub">Type directly in the source editor, drop a Markdown file onto the window, or start a new heading below.</p>
+            <p class="empty-sheet-sub">Type directly in the source editor, drop a Markdown file onto the window, or click below to insert a heading block.</p>
             <div class="empty-sheet-actions">
               <button type="button" class="tool-btn tool-btn-primary" id="btnEmptyStartWriting">Begin Writing</button>
               <button type="button" class="tool-btn" id="btnEmptyOpenFile" style="border-color:var(--border-strong);">Open Local File</button>
-              <button type="button" class="tool-btn" id="btnEmptyLoadSample" style="border-color:var(--border-strong);">Load Editorial Guide</button>
             </div>
           </div>
         `;
         document.getElementById('btnEmptyStartWriting')?.addEventListener('click', () => {
-          applySourceChange('# Untitled Document\n\nBegin writing here...', 'start-writing');
+          applySourceChange('# Untitled\n\n', 'start-writing');
+          const firstEditable = article.querySelector('[contenteditable="true"]');
+          if (firstEditable) firstEditable.focus();
         });
         document.getElementById('btnEmptyOpenFile')?.addEventListener('click', () => triggerOpenFile());
-        document.getElementById('btnEmptyLoadSample')?.addEventListener('click', () => {
-          loadDocumentIntoWorkspace('editorial-guide.md', DEFAULT_DOCUMENT, null);
-        });
         return;
       }
 
@@ -2562,12 +2605,13 @@ Sa kasaysayan ng paglilimbag sa Pilipinas—mula sa *Doctrina Christiana* noong 
             blk.raw = newMd;
             blk.endLine = currentEndLine;
 
-            // Update source buffer and CodeMirror/Textarea immediately without wiping focus in rendered view
+            // Update source buffer and CodeMirror/Textarea immediately and auto-scroll Source to the edited line
             state.sourceText = updatedSource;
             state.dirty = state.sourceText !== state.savedText;
             updateDirtyIndicator();
             updateStatusBar(updatedSource);
             syncSourceEditorBuffer(updatedSource);
+            scrollSourceToLine(currentStartLine);
           });
 
           contentDiv.addEventListener('blur', () => {
@@ -2709,7 +2753,7 @@ Sa kasaysayan ng paglilimbag sa Pilipinas—mula sa *Doctrina Christiana* noong 
       textarea.rows = Math.min(18, lineCount);
       textarea.focus();
 
-      // Real-time keystroke sync to Source Editor without closing the block editor
+      // Real-time keystroke sync to Source Editor & auto-scroll Source to edited line
       textarea.addEventListener('input', () => {
         const nextRaw = textarea.value;
         const updatedSource = spliceMarkdownBlock(state.sourceText, currentStart, currentEnd, nextRaw);
@@ -2719,6 +2763,7 @@ Sa kasaysayan ng paglilimbag sa Pilipinas—mula sa *Doctrina Christiana* noong 
         updateDirtyIndicator();
         updateStatusBar(updatedSource);
         syncSourceEditorBuffer(updatedSource);
+        scrollSourceToLine(currentStart);
       });
 
       const commitBlockChange = () => {
@@ -2768,6 +2813,7 @@ Sa kasaysayan ng paglilimbag sa Pilipinas—mula sa *Doctrina Christiana* noong 
       if (!isNaN(lineNo)) {
         const nextSource = toggleTaskCheckboxOnLine(state.sourceText, lineNo);
         applySourceChange(nextSource, 'task-toggle');
+        scrollSourceToLine(lineNo);
         showToast(`Updated task on line ${lineNo + 1}`);
       }
     });
@@ -2796,13 +2842,14 @@ Sa kasaysayan ng paglilimbag sa Pilipinas—mula sa *Doctrina Christiana* noong 
       input.focus();
       input.select();
 
-      // Live update source as user types inside the table cell
+      // Live update source as user types inside the table cell & auto-scroll Source to that row
       input.addEventListener('input', () => {
         const updated = updateTableCellOnLine(state.sourceText, lineNo, colNo, input.value);
         state.sourceText = updated;
         state.dirty = state.sourceText !== state.savedText;
         updateDirtyIndicator();
         syncSourceEditorBuffer(updated);
+        scrollSourceToLine(lineNo);
       });
 
       let committed = false;
@@ -3129,14 +3176,15 @@ Sa kasaysayan ng paglilimbag sa Pilipinas—mula sa *Doctrina Christiana* noong 
         updateActiveLineFromTextarea();
         updateFallbackGutter(fallbackTextarea.value);
         applySourceChange(fallbackTextarea.value, 'source-editor');
+        scrollRenderedToLine(state.activeSourceLine);
       });
 
       fallbackTextarea.addEventListener('click', updateActiveLineFromTextarea);
       fallbackTextarea.addEventListener('keyup', updateActiveLineFromTextarea);
 
       fallbackTextarea.addEventListener('scroll', () => {
+        // Keep line-number gutter locked to textarea scroll; Rendered View scrolls independently
         if (fallbackGutter) fallbackGutter.scrollTop = fallbackTextarea.scrollTop;
-        handleSourceScrollSync(fallbackTextarea);
       });
     }
 
@@ -3201,6 +3249,11 @@ Sa kasaysayan ng paglilimbag sa Pilipinas—mula sa *Doctrina Christiana* noong 
           if (update.docChanged && !isUpdatingEditorProgrammatically) {
             const text = update.state.doc.toString();
             applySourceChange(text, 'source-editor');
+            try {
+              const headPos = update.state.selection.main.head;
+              const editedLine = update.state.doc.lineAt(headPos).number - 1;
+              scrollRenderedToLine(editedLine);
+            } catch (_) {}
           }
         });
 
@@ -3226,30 +3279,19 @@ Sa kasaysayan ng paglilimbag sa Pilipinas—mula sa *Doctrina Christiana* noong 
 
         if (fallbackWrap) fallbackWrap.style.display = 'none';
 
-        cmView.scrollDOM.addEventListener('scroll', () => {
-          handleSourceScrollSync(cmView.scrollDOM);
-        });
+        // Source and Rendered panes scroll independently; auto-scroll only triggers on edit
       } catch (_) {
         // Fallback editor with wrap-aware line numbers remains active
         scheduleFallbackGutterUpdate();
       }
     }
 
-    // --- Proportional Two-Way Scroll Sync & Outline Scroll-Spy ---
+    // --- Independent Pane Scrolling + Auto-Scroll to Edited Part ---
     const renderedScroller = document.getElementById('renderedScrollContainer');
-
-    function handleSourceScrollSync(sourceScrollEl) {
-      if (state.settings.viewMode !== 'split' || isSyncingScroll || !renderedScroller) return;
-      isSyncingScroll = true;
-      const maxScroll = sourceScrollEl.scrollHeight - sourceScrollEl.clientHeight;
-      const ratio = maxScroll > 0 ? sourceScrollEl.scrollTop / maxScroll : 0;
-      const targetMax = renderedScroller.scrollHeight - renderedScroller.clientHeight;
-      renderedScroller.scrollTop = ratio * targetMax;
-      setTimeout(() => { isSyncingScroll = false; }, 35);
-    }
 
     if (renderedScroller) {
       renderedScroller.addEventListener('scroll', () => {
+        // Update active heading in Outline Sidebar while reading (Source pane scroll stays independent)
         const scrollTop = renderedScroller.scrollTop;
         let currentHeadingId = parsedHeadingsCache[0]?.id || null;
         for (const h of parsedHeadingsCache) {
@@ -3263,44 +3305,42 @@ Sa kasaysayan ng paglilimbag sa Pilipinas—mula sa *Doctrina Christiana* noong 
             btn.classList.toggle('active', btn.getAttribute('data-heading-id') === currentHeadingId);
           });
         }
-
-        if (state.settings.viewMode !== 'split' || isSyncingScroll) return;
-        isSyncingScroll = true;
-        const maxScroll = renderedScroller.scrollHeight - renderedScroller.clientHeight;
-        const ratio = maxScroll > 0 ? scrollTop / maxScroll : 0;
-        const sourceTarget = cmView ? cmView.scrollDOM : fallbackTextarea;
-        if (sourceTarget) {
-          const sMax = sourceTarget.scrollHeight - sourceTarget.clientHeight;
-          sourceTarget.scrollTop = ratio * sMax;
-          if (fallbackGutter && sourceTarget === fallbackTextarea) {
-            fallbackGutter.scrollTop = fallbackTextarea.scrollTop;
-          }
-        }
-        setTimeout(() => { isSyncingScroll = false; }, 35);
       });
     }
 
+    // Automatically scroll Rendered View to the block corresponding to the edited Source line
     function scrollRenderedToLine(lineNumber) {
       if (!renderedScroller) return;
-      const blockEl = document.querySelector(`.md-block[data-start-line="${lineNumber}"]`) ||
-                      Array.from(document.querySelectorAll('.md-block')).find(el => {
-                        const s = parseInt(el.getAttribute('data-start-line'), 10);
-                        const e = parseInt(el.getAttribute('data-end-line'), 10);
-                        return lineNumber >= s && lineNumber < e;
-                      });
-      if (blockEl) {
-        blockEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      const blocks = Array.from(document.querySelectorAll('.md-block'));
+      let targetBlock = blocks.find(el => {
+        const s = parseInt(el.getAttribute('data-start-line'), 10);
+        const e = parseInt(el.getAttribute('data-end-line'), 10);
+        return lineNumber >= s && lineNumber <= e;
+      });
+      if (!targetBlock && blocks.length > 0) {
+        // Pick the closest preceding block
+        for (const el of blocks) {
+          const s = parseInt(el.getAttribute('data-start-line'), 10);
+          if (s <= lineNumber) targetBlock = el;
+        }
+      }
+      if (targetBlock) {
+        targetBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }
 
+    // Automatically scroll Source Editor to the line corresponding to the edited Rendered block
     function scrollSourceToLine(lineNumber) {
       const totalLines = Math.max(1, splitLines(state.sourceText).length);
       const ratio = Math.max(0, Math.min(1, lineNumber / totalLines));
       if (cmView) {
         const scroller = cmView.scrollDOM;
-        scroller.scrollTo({ top: ratio * (scroller.scrollHeight - scroller.clientHeight), behavior: 'smooth' });
+        const targetTop = Math.max(0, ratio * (scroller.scrollHeight - scroller.clientHeight));
+        scroller.scrollTo({ top: targetTop, behavior: 'smooth' });
       } else if (fallbackTextarea) {
-        fallbackTextarea.scrollTo({ top: ratio * (fallbackTextarea.scrollHeight - fallbackTextarea.clientHeight), behavior: 'smooth' });
+        const targetTop = Math.max(0, ratio * (fallbackTextarea.scrollHeight - fallbackTextarea.clientHeight));
+        fallbackTextarea.scrollTo({ top: targetTop, behavior: 'smooth' });
+        if (fallbackGutter) fallbackGutter.scrollTop = targetTop;
       }
     }
 
@@ -3351,11 +3391,34 @@ Sa kasaysayan ng paglilimbag sa Pilipinas—mula sa *Doctrina Christiana* noong 
           const idx = parseInt(btn.getAttribute('data-recent-idx'), 10);
           const entry = list[idx];
           if (entry) {
+            hideHomeScreen();
             loadDocumentIntoWorkspace(entry.name, entry.content || '', null);
             showToast(`Loaded ${entry.name}`);
           }
         });
       });
+
+      const homeRecentWrap = document.getElementById('homeRecentWrap');
+      const homeRecentList = document.getElementById('homeRecentList');
+      if (homeRecentWrap && homeRecentList) {
+        if (list.length === 0) {
+          homeRecentWrap.style.display = 'none';
+        } else {
+          homeRecentWrap.style.display = 'block';
+          homeRecentList.innerHTML = container.innerHTML;
+          homeRecentList.querySelectorAll('[data-recent-idx]').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const idx = parseInt(btn.getAttribute('data-recent-idx'), 10);
+              const entry = list[idx];
+              if (entry) {
+                hideHomeScreen();
+                loadDocumentIntoWorkspace(entry.name, entry.content || '', null);
+                showToast(`Loaded ${entry.name}`);
+              }
+            });
+          });
+        }
+      }
     }
 
     function loadDocumentIntoWorkspace(name, content, handle = null) {
@@ -3392,6 +3455,7 @@ Sa kasaysayan ng paglilimbag sa Pilipinas—mula sa *Doctrina Christiana* noong 
           });
           const file = await handle.getFile();
           const text = await file.text();
+          hideHomeScreen();
           loadDocumentIntoWorkspace(file.name, text, handle);
           showToast(`Opened ${file.name}`);
           return;
@@ -3410,6 +3474,7 @@ Sa kasaysayan ng paglilimbag sa Pilipinas—mula sa *Doctrina Christiana* noong 
       const file = e.target.files && e.target.files[0];
       if (!file) return;
       const text = await file.text();
+      hideHomeScreen();
       loadDocumentIntoWorkspace(file.name, text, null);
       showToast(`Opened ${file.name}`);
     });
@@ -3510,7 +3575,8 @@ Sa kasaysayan ng paglilimbag sa Pilipinas—mula sa *Doctrina Christiana* noong 
           if (handle && handle.kind === 'file') {
             const file = await handle.getFile();
             const text = await file.text();
-            loadDocumentIntoWorkspace(file.name, text, handle);
+            hideHomeScreen();
+          loadDocumentIntoWorkspace(file.name, text, handle);
             showToast(`Opened ${file.name}`);
             return;
           }
@@ -3519,7 +3585,8 @@ Sa kasaysayan ng paglilimbag sa Pilipinas—mula sa *Doctrina Christiana* noong 
       const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
       if (file) {
         const text = await file.text();
-        loadDocumentIntoWorkspace(file.name, text, null);
+        hideHomeScreen();
+      loadDocumentIntoWorkspace(file.name, text, null);
         showToast(`Opened ${file.name}`);
       }
     });
@@ -3532,9 +3599,35 @@ Sa kasaysayan ng paglilimbag sa Pilipinas—mula sa *Doctrina Christiana* noong 
       showToast('Created blank document');
     });
 
+    const homeScreenEl = document.getElementById('homeScreen');
+
+    function hideHomeScreen() {
+      if (homeScreenEl) homeScreenEl.classList.add('hidden');
+    }
+
+    function showHomeScreen() {
+      renderRecentFilesUI();
+      if (homeScreenEl) homeScreenEl.classList.remove('hidden');
+    }
+
     document.getElementById('brandMarkHome').addEventListener('click', () => {
-      loadDocumentIntoWorkspace('editorial-guide.md', DEFAULT_DOCUMENT, null);
-      showToast('Loaded Vellum Editorial Guide');
+      showHomeScreen();
+    });
+
+    document.getElementById('btnHomeStartWriting').addEventListener('click', () => {
+      hideHomeScreen();
+      loadDocumentIntoWorkspace('untitled.md', '', null);
+      if (cmView) cmView.focus();
+      else if (fallbackTextarea) fallbackTextarea.focus();
+    });
+
+    document.getElementById('btnHomeOpenFile').addEventListener('click', async () => {
+      await triggerOpenFile();
+      hideHomeScreen();
+    });
+
+    document.getElementById('btnHomeResumeSession').addEventListener('click', () => {
+      hideHomeScreen();
     });
 
     document.getElementById('docFilenameInput').addEventListener('change', (e) => {
@@ -3570,26 +3663,7 @@ Sa kasaysayan ng paglilimbag sa Pilipinas—mula sa *Doctrina Christiana* noong 
       renderRecentFilesUI();
     });
 
-    document.getElementById('btnLoadSampleDefault').addEventListener('click', () => {
-      loadDocumentIntoWorkspace('editorial-guide.md', DEFAULT_DOCUMENT, null);
-      showToast('Loaded Editorial Guide');
-    });
-
-    document.getElementById('btnLoadSampleTagalog').addEventListener('click', () => {
-      loadDocumentIntoWorkspace('tipograpiya-pilipinas.md', SAMPLE_TAGALOG, null);
-      showToast('Loaded Filipino / Tagalog specimen');
-    });
-
-    document.getElementById('btnLoadSampleEdge').addEventListener('click', () => {
-      loadDocumentIntoWorkspace('edge-cases-torture.md', SAMPLE_EDGE_CASES, null);
-      showToast('Loaded Edge Cases specimen');
-    });
-
-    document.getElementById('btnLoadSampleLarge').addEventListener('click', () => {
-      const largeDoc = generateLargeBenchmarkDoc();
-      loadDocumentIntoWorkspace('benchmark-5200-lines.md', largeDoc, null);
-      showToast('Generated 5,200+ line CRLF benchmark');
-    });
+// Built-in showcase texts removed per user preference
 
     document.getElementById('btnUndo').addEventListener('click', performUndo);
     document.getElementById('btnRedo').addEventListener('click', performRedo);
@@ -3896,13 +3970,18 @@ ${cleanHtml}
         const savedMetaRaw = localStorage.getItem(STORAGE_KEYS.AUTOSAVE_META);
         if (savedDoc !== null && savedDoc.trim().length > 0) {
           const meta = savedMetaRaw ? JSON.parse(savedMetaRaw) : {};
-          state.filename = meta.filename || 'editorial-guide.md';
+          state.filename = meta.filename || 'untitled.md';
           state.sourceText = savedDoc;
           state.savedText = savedDoc;
+          const btnResume = document.getElementById('btnHomeResumeSession');
+          if (btnResume) {
+            btnResume.style.display = 'inline-flex';
+            btnResume.querySelector('span').textContent = `Continue ${state.filename}`;
+          }
         } else {
-          state.filename = 'editorial-guide.md';
-          state.sourceText = DEFAULT_DOCUMENT;
-          state.savedText = DEFAULT_DOCUMENT;
+          state.filename = 'untitled.md';
+          state.sourceText = '';
+          state.savedText = '';
         }
         document.getElementById('docFilenameInput').value = state.filename;
         if (fallbackTextarea) {
