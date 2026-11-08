@@ -1,0 +1,3617 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vellum — Editorial Markdown Viewer & Two-Way Editor</title>
+
+  <!-- Curated Editorial Google Fonts: Instrument Serif, Newsreader, Lora, Fraunces, Plus Jakarta Sans, JetBrains Mono, Fira Code, IBM Plex Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&family=Lora:ital,wght@0,400;0,600;1,400&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Highlight.js Syntax Themes (Light & Dark synced to App Theme) -->
+  <link id="hljs-light-theme" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" />
+  <link id="hljs-dark-theme" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" disabled />
+
+  <!-- KaTeX Stylesheet for Math Notation -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+
+  <!-- Core Libraries (Pinned Versions via CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/markdown-it-footnote@4.0.0/dist/markdown-it-footnote.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.9/dist/purify.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+
+  <style>
+    :root {
+      /* Default Theme: Warm Paper (Light) */
+      --bg: #FAF7F2;
+      --bg-elevated: #F2ECE1;
+      --surface: #FFFFFF;
+      --surface-hover: #EFE9DE;
+      --ink: #1C1917;
+      --ink-secondary: #44403C;
+      --muted: #78716C;
+      --border: #E5DEC9;
+      --border-strong: #D0C7B0;
+      --accent: #B84A27;
+      --accent-soft: rgba(184, 74, 39, 0.12);
+      --accent-contrast: #FFFFFF;
+      --code-bg: #F3EFE6;
+      --code-ink: #292524;
+      --mark-bg: rgba(234, 179, 8, 0.32);
+      --mark-current: rgba(184, 74, 39, 0.38);
+      --scrim: rgba(28, 25, 23, 0.45);
+
+      /* Typography Tokens */
+      --font-body: 'Newsreader', Georgia, 'Times New Roman', serif;
+      --font-heading: 'Instrument Serif', Georgia, serif;
+      --font-ui: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-code: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+      --doc-font-size: 18px;
+      --doc-line-height: 1.72;
+      --doc-para-spacing: 1.25em;
+      --doc-measure: 68ch;
+
+      /* Motion Token (< 200ms per specification) */
+      --transition-fast: 140ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    [data-theme="dark"] {
+      --bg: #131312;
+      --bg-elevated: #1C1B1A;
+      --surface: #232220;
+      --surface-hover: #2C2A28;
+      --ink: #EDEAE4;
+      --ink-secondary: #C7C2B8;
+      --muted: #8E887E;
+      --border: #2E2C29;
+      --border-strong: #423F3B;
+      --code-bg: #1B1A18;
+      --code-ink: #E5E0D8;
+      --mark-bg: rgba(234, 179, 8, 0.28);
+      --mark-current: rgba(224, 109, 71, 0.45);
+      --scrim: rgba(0, 0, 0, 0.65);
+    }
+
+    [data-theme="sepia"] {
+      --bg: #F3E9D2;
+      --bg-elevated: #E8DCC0;
+      --surface: #FAF2E1;
+      --surface-hover: #E2D4B5;
+      --ink: #2B2118;
+      --ink-secondary: #4D3D2E;
+      --muted: #75614E;
+      --border: #D9C9A8;
+      --border-strong: #C4B08B;
+      --code-bg: #EAE0C8;
+      --code-ink: #2B2118;
+      --mark-bg: rgba(217, 119, 6, 0.28);
+      --mark-current: rgba(184, 74, 39, 0.4);
+      --scrim: rgba(43, 33, 24, 0.48);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      background-color: var(--bg);
+      color: var(--ink);
+      font-family: var(--font-ui);
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible,
+    [tabindex]:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* Lucide SVG Icon Utility */
+    .icon-svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      stroke-width: 1.75;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      flex-shrink: 0;
+    }
+
+    /* App Shell */
+    .app-shell {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      width: 100vw;
+      background: var(--bg);
+      color: var(--ink);
+      transition: background-color var(--transition-fast), color var(--transition-fast);
+    }
+
+    /* Top Toolbar */
+    .top-toolbar {
+      height: 48px;
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border);
+      gap: 8px;
+      z-index: 30;
+      user-select: none;
+    }
+
+    .app-shell.zen-mode .top-toolbar,
+    .app-shell.zen-mode .outline-sidebar,
+    .app-shell.zen-mode .status-bar {
+      display: none !important;
+    }
+
+    .zen-exit-pill {
+      display: none;
+      position: fixed;
+      top: 14px;
+      right: 18px;
+      z-index: 80;
+      background: var(--bg-elevated);
+      color: var(--ink-secondary);
+      border: 1px solid var(--border-strong);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      align-items: center;
+      gap: 6px;
+      opacity: 0.6;
+      transition: opacity var(--transition-fast), border-color var(--transition-fast);
+    }
+
+    .zen-exit-pill:hover,
+    .zen-exit-pill:focus-visible {
+      opacity: 1;
+      border-color: var(--accent);
+      color: var(--ink);
+    }
+
+    .app-shell.zen-mode .zen-exit-pill {
+      display: inline-flex;
+    }
+
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-family: var(--font-heading);
+      font-size: 21px;
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      padding-right: 10px;
+      margin-right: 2px;
+      border-right: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .brand-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      background: var(--accent);
+      display: inline-block;
+    }
+
+    .doc-filename-wrap {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      min-width: 0;
+    }
+
+    .doc-filename-input {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--ink);
+      font-family: var(--font-ui);
+      font-weight: 600;
+      font-size: 13px;
+      padding: 4px 7px;
+      border-radius: 5px;
+      width: 155px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      transition: background-color var(--transition-fast), border-color var(--transition-fast);
+    }
+
+    .doc-filename-input:hover,
+    .doc-filename-input:focus {
+      background: var(--surface);
+      border-color: var(--border-strong);
+    }
+
+    .unsaved-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--muted);
+      padding: 2px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    .unsaved-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--muted);
+      opacity: 0.45;
+      flex-shrink: 0;
+      transition: background-color var(--transition-fast), opacity var(--transition-fast);
+    }
+
+    .unsaved-indicator.dirty .unsaved-dot {
+      background: var(--accent);
+      opacity: 1;
+    }
+
+    .unsaved-indicator.dirty {
+      color: var(--ink-secondary);
+      font-weight: 500;
+    }
+
+    /* Segmented Mode Switcher */
+    .mode-switcher {
+      display: inline-flex;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 2px;
+      gap: 2px;
+    }
+
+    .mode-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: none;
+      background: transparent;
+      color: var(--ink-secondary);
+      font-family: var(--font-ui);
+      font-size: 12.5px;
+      font-weight: 500;
+      padding: 4px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color var(--transition-fast), color var(--transition-fast);
+      white-space: nowrap;
+    }
+
+    .mode-btn:hover {
+      color: var(--ink);
+    }
+
+    .mode-btn.active {
+      background: var(--surface);
+      color: var(--ink);
+      font-weight: 600;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    }
+
+    /* Standard Toolbar Buttons */
+    .tool-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      height: 32px;
+      padding: 0 8px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--ink-secondary);
+      font-family: var(--font-ui);
+      font-size: 12.5px;
+      font-weight: 500;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+      white-space: nowrap;
+    }
+
+    .tool-btn:hover:not(:disabled) {
+      background: var(--surface-hover);
+      color: var(--ink);
+    }
+
+    .tool-btn.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .tool-btn:disabled {
+      opacity: 0.36;
+      cursor: not-allowed;
+    }
+
+    .tool-btn-primary {
+      background: var(--accent);
+      color: var(--accent-contrast);
+      border-color: var(--accent);
+    }
+
+    .tool-btn-primary:hover:not(:disabled) {
+      background: var(--accent);
+      color: var(--accent-contrast);
+      filter: brightness(1.08);
+    }
+
+    .toolbar-divider {
+      width: 1px;
+      height: 18px;
+      background: var(--border);
+      margin: 0 2px;
+      flex-shrink: 0;
+    }
+
+    /* Dropdown Menu for Export */
+    .dropdown-wrap {
+      position: relative;
+    }
+
+    .dropdown-menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      width: 210px;
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      border-radius: 6px;
+      padding: 4px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      display: none;
+      flex-direction: column;
+      z-index: 50;
+    }
+
+    .dropdown-menu.open {
+      display: flex;
+    }
+
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 7px 10px;
+      border: none;
+      background: transparent;
+      color: var(--ink);
+      font-family: var(--font-ui);
+      font-size: 12.5px;
+      text-align: left;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .dropdown-item:hover {
+      background: var(--surface-hover);
+    }
+
+    /* Find in Document Bar */
+    .find-bar {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border);
+      z-index: 25;
+    }
+
+    .find-bar.open {
+      display: flex;
+    }
+
+    .find-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      flex: 1;
+      max-width: 340px;
+    }
+
+    .find-input {
+      width: 100%;
+      height: 30px;
+      padding: 0 76px 0 10px;
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      border-radius: 5px;
+      color: var(--ink);
+      font-family: var(--font-ui);
+      font-size: 13px;
+    }
+
+    .find-count {
+      position: absolute;
+      right: 8px;
+      font-size: 11.5px;
+      color: var(--muted);
+      pointer-events: none;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Main Workspace */
+    .workspace-main {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Collapsible Outline & Recent Files Sidebar */
+    .outline-sidebar {
+      width: 252px;
+      min-width: 252px;
+      background: var(--bg-elevated);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      transition: margin-left var(--transition-fast), opacity var(--transition-fast);
+      z-index: 20;
+    }
+
+    .outline-sidebar.collapsed {
+      margin-left: -252px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .sidebar-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      padding: 6px 12px 0;
+      gap: 14px;
+    }
+
+    .sidebar-tab {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      padding: 6px 2px 8px;
+      font-family: var(--font-ui);
+      font-size: 11.5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    .sidebar-tab.active {
+      color: var(--ink);
+      border-bottom-color: var(--accent);
+    }
+
+    .sidebar-panel {
+      display: none;
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 8px;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .sidebar-panel.active {
+      display: flex;
+    }
+
+    .toc-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .toc-item-btn {
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border: none;
+      border-left: 2px solid transparent;
+      padding: 5px 8px;
+      border-radius: 0 4px 4px 0;
+      color: var(--ink-secondary);
+      font-family: var(--font-ui);
+      font-size: 12.5px;
+      line-height: 1.35;
+      cursor: pointer;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+    }
+
+    .toc-item-btn:hover {
+      background: var(--surface-hover);
+      color: var(--ink);
+    }
+
+    .toc-item-btn.active {
+      border-left-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    .toc-lvl-1 { padding-left: 8px; font-weight: 600; }
+    .toc-lvl-2 { padding-left: 18px; }
+    .toc-lvl-3 { padding-left: 28px; font-size: 12px; }
+    .toc-lvl-4, .toc-lvl-5, .toc-lvl-6 { padding-left: 38px; font-size: 11.5px; color: var(--muted); }
+
+    .recent-file-item {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      text-align: left;
+      background: transparent;
+      border: 1px solid transparent;
+      padding: 7px 9px;
+      border-radius: 5px;
+      cursor: pointer;
+      color: var(--ink);
+    }
+
+    .recent-file-item:hover {
+      background: var(--surface-hover);
+      border-color: var(--border);
+    }
+
+    .recent-file-name {
+      font-size: 12.5px;
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .recent-file-meta {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .sidebar-section-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      padding: 8px 8px 4px;
+    }
+
+    /* Panes Container */
+    .panes-container {
+      flex: 1;
+      display: flex;
+      min-width: 0;
+      min-height: 0;
+      position: relative;
+    }
+
+    .source-pane {
+      flex: 1;
+      min-width: 0;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border);
+      background: var(--bg);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .pane-subbar {
+      height: 28px;
+      min-height: 28px;
+      padding: 0 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-elevated);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--muted);
+      user-select: none;
+    }
+
+    .rendered-pane {
+      flex: 1;
+      min-width: 0;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      overflow: hidden;
+    }
+
+    .rendered-scroll-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 36px 28px 96px;
+      scroll-behavior: auto;
+    }
+
+    .panes-container[data-mode="read"] .source-pane {
+      display: none;
+    }
+
+    .panes-container[data-mode="read"] .pane-subbar {
+      display: none;
+    }
+
+    .panes-container[data-mode="source"] .rendered-pane {
+      display: none;
+    }
+
+    .panes-container[data-mode="source"] .source-pane {
+      border-right: none;
+    }
+
+    /* CodeMirror 6 & High-Speed Fallback Source Editor Styling */
+    .cm-editor-mount {
+      flex: 1;
+      height: 100%;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .cm-editor {
+      height: 100%;
+      font-family: var(--font-code) !important;
+      font-size: calc(var(--doc-font-size) * 0.84) !important;
+      background: var(--bg) !important;
+      color: var(--ink) !important;
+    }
+
+    .cm-editor .cm-scroller {
+      font-family: var(--font-code) !important;
+      line-height: 1.65 !important;
+      padding: 24px 0 80px !important;
+      overflow-y: auto !important;
+    }
+
+    .cm-editor .cm-content {
+      max-width: 82ch;
+      margin: 0 auto;
+      padding: 0 20px !important;
+      caret-color: var(--accent) !important;
+    }
+
+    .cm-editor .cm-gutters {
+      background: var(--bg) !important;
+      color: var(--muted) !important;
+      border-right: 1px solid var(--border) !important;
+      padding-left: 6px;
+    }
+
+    .cm-editor-mount.hide-line-numbers .cm-gutters,
+    .cm-editor-mount.hide-line-numbers .fallback-gutter {
+      display: none !important;
+    }
+
+    .cm-editor .cm-activeLine {
+      background-color: var(--accent-soft) !important;
+    }
+
+    .cm-editor .cm-activeLineGutter {
+      background-color: transparent !important;
+      color: var(--accent) !important;
+      font-weight: 600;
+    }
+
+    .cm-editor .cm-selectionBackground,
+    .cm-editor.cm-focused .cm-selectionBackground {
+      background-color: var(--accent-soft) !important;
+    }
+
+    /* Fallback Synchronized Source Editor (if CDN module is offline) */
+    .fallback-editor-wrap {
+      display: flex;
+      flex: 1;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    .fallback-gutter {
+      width: 48px;
+      padding: 24px 8px 80px 0;
+      text-align: right;
+      font-family: var(--font-code);
+      font-size: calc(var(--doc-font-size) * 0.84);
+      line-height: 1.65;
+      color: var(--muted);
+      background: var(--bg);
+      border-right: 1px solid var(--border);
+      user-select: none;
+      overflow: hidden;
+      white-space: pre;
+    }
+
+    .fallback-textarea {
+      flex: 1;
+      height: 100%;
+      border: none;
+      outline: none;
+      resize: none;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font-code);
+      font-size: calc(var(--doc-font-size) * 0.84);
+      line-height: 1.65;
+      padding: 24px 24px 80px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    /* Editorial Rendered Document Typography */
+    .markdown-document {
+      max-width: var(--doc-measure);
+      margin: 0 auto;
+      font-family: var(--font-body);
+      font-size: var(--doc-font-size);
+      line-height: var(--doc-line-height);
+      color: var(--ink);
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    /* Interactive Editable Blocks in Rendered View */
+    .md-block {
+      position: relative;
+      border-radius: 5px;
+      margin: 0 -10px var(--doc-para-spacing);
+      padding: 4px 10px;
+      border: 1px solid transparent;
+      transition: border-color var(--transition-fast), background-color var(--transition-fast);
+    }
+
+    .md-block:hover {
+      border-color: var(--border);
+      background: rgba(120, 113, 108, 0.035);
+    }
+
+    .md-block-badge {
+      position: absolute;
+      top: 4px;
+      right: 6px;
+      opacity: 0;
+      background: var(--bg-elevated);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 7px;
+      font-family: var(--font-ui);
+      font-size: 10.5px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: opacity var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+      z-index: 5;
+      user-select: none;
+    }
+
+    .md-block:hover .md-block-badge,
+    .md-block:focus-within .md-block-badge {
+      opacity: 1;
+    }
+
+    .md-block-badge:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Inline Block Editor Card */
+    .md-block.editing {
+      background: var(--surface);
+      border-color: var(--accent);
+      padding: 10px 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
+    }
+
+    .inline-editor-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      font-family: var(--font-ui);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .inline-editor-textarea {
+      width: 100%;
+      min-height: 68px;
+      background: var(--bg);
+      color: var(--ink);
+      border: 1px solid var(--border-strong);
+      border-radius: 4px;
+      padding: 8px 10px;
+      font-family: var(--font-code);
+      font-size: calc(var(--doc-font-size) * 0.84);
+      line-height: 1.55;
+      resize: vertical;
+      display: block;
+    }
+
+    .inline-editor-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 8px;
+      font-family: var(--font-ui);
+      font-size: 11.5px;
+      color: var(--muted);
+    }
+
+    .inline-editor-btns {
+      display: flex;
+      gap: 6px;
+    }
+
+    /* Document Elements */
+    .markdown-document h1,
+    .markdown-document h2,
+    .markdown-document h3,
+    .markdown-document h4,
+    .markdown-document h5,
+    .markdown-document h6 {
+      font-family: var(--font-heading);
+      color: var(--ink);
+      font-weight: 400;
+      line-height: 1.22;
+      margin: 0;
+      letter-spacing: -0.01em;
+    }
+
+    .markdown-document h1 {
+      font-size: 2.3em;
+      padding-bottom: 0.22em;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .markdown-document h2 {
+      font-size: 1.72em;
+      margin-top: 0.25em;
+    }
+
+    .markdown-document h3 {
+      font-size: 1.36em;
+    }
+
+    .markdown-document h4,
+    .markdown-document h5,
+    .markdown-document h6 {
+      font-size: 1.12em;
+      font-family: var(--font-ui);
+      font-weight: 600;
+    }
+
+    .markdown-document p {
+      margin: 0;
+    }
+
+    .markdown-document a {
+      color: var(--accent);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      text-decoration-thickness: 1px;
+    }
+
+    .markdown-document a:hover {
+      text-decoration-thickness: 2px;
+    }
+
+    .markdown-document blockquote {
+      margin: 0;
+      padding: 4px 0 4px 18px;
+      border-left: 3px solid var(--accent);
+      color: var(--ink-secondary);
+      font-style: italic;
+    }
+
+    .markdown-document ul,
+    .markdown-document ol {
+      margin: 0;
+      padding-left: 1.45em;
+    }
+
+    .markdown-document li + li {
+      margin-top: 0.3em;
+    }
+
+    /* Interactive GFM Task Checkboxes */
+    .markdown-document li.task-list-item {
+      list-style: none;
+      margin-left: -1.25em;
+      display: flex;
+      align-items: baseline;
+      gap: 0.55em;
+    }
+
+    .markdown-document input.task-checkbox {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border: 1.5px solid var(--border-strong);
+      border-radius: 3.5px;
+      background: var(--surface);
+      cursor: pointer;
+      position: relative;
+      top: 2px;
+      flex-shrink: 0;
+      transition: background-color var(--transition-fast), border-color var(--transition-fast);
+    }
+
+    .markdown-document input.task-checkbox:checked {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .markdown-document input.task-checkbox:checked::after {
+      content: "";
+      position: absolute;
+      left: 4px;
+      top: 1px;
+      width: 4px;
+      height: 8px;
+      border: solid var(--accent-contrast);
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+
+    /* Code & Pre */
+    .markdown-document code {
+      font-family: var(--font-code);
+      font-size: 0.84em;
+      background: var(--code-bg);
+      color: var(--code-ink);
+      padding: 0.15em 0.38em;
+      border-radius: 4px;
+    }
+
+    .markdown-document pre {
+      margin: 0;
+      background: var(--code-bg);
+      color: var(--code-ink);
+      padding: 14px 16px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      overflow-x: auto;
+      font-family: var(--font-code);
+      font-size: 0.84em;
+      line-height: 1.58;
+    }
+
+    .markdown-document pre code {
+      background: transparent;
+      padding: 0;
+      font-size: inherit;
+      color: inherit;
+    }
+
+    /* Tables */
+    .table-scroll-wrap {
+      overflow-x: auto;
+      width: 100%;
+    }
+
+    .markdown-document table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-ui);
+      font-size: 0.86em;
+      line-height: 1.5;
+    }
+
+    .markdown-document th,
+    .markdown-document td {
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+    }
+
+    .markdown-document th {
+      background: var(--bg-elevated);
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .markdown-document td[data-cell-editable="true"]:hover {
+      background: var(--accent-soft);
+      cursor: text;
+    }
+
+    .markdown-document hr {
+      border: none;
+      border-top: 1px solid var(--border-strong);
+      margin: 0.5em 0;
+    }
+
+    .markdown-document img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 6px;
+      display: block;
+      margin: 0.5em 0;
+    }
+
+    .img-fallback-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      background: var(--bg-elevated);
+      border: 1px dashed var(--border-strong);
+      border-radius: 6px;
+      font-family: var(--font-ui);
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+
+    /* Search Highlight Marks */
+    mark.find-highlight {
+      background: var(--mark-bg);
+      color: inherit;
+      border-radius: 2px;
+      padding: 0 1px;
+    }
+
+    mark.find-highlight.current {
+      background: var(--mark-current);
+      outline: 1px solid var(--accent);
+    }
+
+    /* Empty State (No stock illustrations, pure typography) */
+    .empty-state-card {
+      max-width: 480px;
+      margin: 56px auto;
+      padding: 36px 28px;
+      border: 1px dashed var(--border-strong);
+      border-radius: 8px;
+      text-align: center;
+      font-family: var(--font-ui);
+      background: var(--bg-elevated);
+    }
+
+    .empty-state-title {
+      font-family: var(--font-heading);
+      font-size: 26px;
+      color: var(--ink);
+      margin: 0 0 8px;
+      font-weight: 400;
+    }
+
+    .empty-state-sub {
+      font-size: 13.5px;
+      color: var(--muted);
+      margin: 0 0 22px;
+      line-height: 1.55;
+    }
+
+    .empty-state-actions {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* Status Bar */
+    .status-bar {
+      height: 28px;
+      min-height: 28px;
+      background: var(--bg-elevated);
+      border-top: 1px solid var(--border);
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--font-ui);
+      font-size: 11.5px;
+      color: var(--muted);
+      user-select: none;
+      z-index: 30;
+    }
+
+    .status-metrics {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Slide-Over Customization Panel */
+    .drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      background: var(--scrim);
+      z-index: 60;
+      display: none;
+      align-items: stretch;
+      justify-content: flex-end;
+    }
+
+    .drawer-backdrop.open {
+      display: flex;
+    }
+
+    .settings-drawer {
+      width: 360px;
+      max-width: 92vw;
+      background: var(--bg-elevated);
+      border-left: 1px solid var(--border-strong);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      color: var(--ink);
+    }
+
+    .drawer-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .drawer-title {
+      font-family: var(--font-heading);
+      font-size: 21px;
+      margin: 0;
+      font-weight: 400;
+    }
+
+    .drawer-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .setting-section {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .setting-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink-secondary);
+    }
+
+    .setting-select {
+      width: 100%;
+      height: 34px;
+      padding: 0 10px;
+      border-radius: 5px;
+      border: 1px solid var(--border-strong);
+      background: var(--surface);
+      color: var(--ink);
+      font-family: var(--font-ui);
+      font-size: 13px;
+    }
+
+    .segmented-options {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .seg-option-btn {
+      padding: 7px 8px;
+      border: 1px solid var(--border-strong);
+      background: var(--surface);
+      color: var(--ink-secondary);
+      border-radius: 5px;
+      font-family: var(--font-ui);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .seg-option-btn.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    .swatch-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .accent-swatch {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .accent-swatch.active {
+      outline: 2px solid var(--ink);
+      outline-offset: 2px;
+    }
+
+    .range-slider {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .live-preview-box {
+      padding: 12px 14px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+    }
+
+    .live-preview-heading {
+      font-family: var(--font-heading);
+      font-size: 18px;
+      margin: 0 0 4px;
+      color: var(--ink);
+    }
+
+    .live-preview-body {
+      font-family: var(--font-body);
+      font-size: 14px;
+      line-height: var(--doc-line-height);
+      margin: 0;
+      color: var(--ink-secondary);
+    }
+
+    /* Keyboard Shortcuts Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: var(--scrim);
+      z-index: 70;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-card {
+      width: 480px;
+      max-width: 100%;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .shortcut-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px 16px;
+      padding: 16px 18px;
+      align-items: center;
+      font-size: 13px;
+    }
+
+    kbd {
+      font-family: var(--font-code);
+      font-size: 11.5px;
+      padding: 2px 6px;
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      border-radius: 4px;
+      color: var(--ink);
+    }
+
+    /* Drag and Drop Overlay */
+    .drop-overlay {
+      position: fixed;
+      inset: 12px;
+      background: rgba(28, 25, 23, 0.82);
+      border: 2px dashed var(--accent);
+      border-radius: 10px;
+      z-index: 90;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      color: #FAF7F2;
+      font-family: var(--font-heading);
+      font-size: 28px;
+      pointer-events: none;
+    }
+
+    .drop-overlay.active {
+      display: flex;
+    }
+
+    /* Toast Notification */
+    .toast-pill {
+      position: fixed;
+      bottom: 40px;
+      right: 18px;
+      background: var(--ink);
+      color: var(--bg);
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-family: var(--font-ui);
+      font-size: 12.5px;
+      font-weight: 500;
+      z-index: 85;
+      opacity: 0;
+      transform: translateY(6px);
+      pointer-events: none;
+      transition: opacity var(--transition-fast), transform var(--transition-fast);
+    }
+
+    .toast-pill.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Responsive Breakpoints */
+    @media (max-width: 768px) {
+      .outline-sidebar {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        box-shadow: 4px 0 18px rgba(0, 0, 0, 0.18);
+      }
+      .hide-mobile {
+        display: none !important;
+      }
+      .rendered-scroll-container {
+        padding: 24px 16px 72px;
+      }
+      .doc-filename-input {
+        width: 105px;
+      }
+    }
+
+    /* Print-Friendly Styles for Save as PDF */
+    @media print {
+      body, html, .app-shell, .workspace-main, .panes-container, .rendered-pane, .rendered-scroll-container {
+        height: auto !important;
+        overflow: visible !important;
+        background: #FFFFFF !important;
+        color: #000000 !important;
+        padding: 0 !important;
+        display: block !important;
+      }
+      .top-toolbar, .outline-sidebar, .source-pane, .status-bar, .find-bar, .md-block-badge, .zen-exit-pill, .pane-subbar {
+        display: none !important;
+      }
+      .markdown-document {
+        max-width: 100% !important;
+        font-size: 11.5pt !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="appShell" class="app-shell">
+    <!-- Hidden File Input Fallback for Firefox/Safari/Iframe -->
+    <input id="fileInputFallback" type="file" accept=".md,.markdown,.txt,text/markdown,text/plain" style="display:none" aria-label="Open Markdown file" />
+
+    <!-- Zen Mode Exit Pill -->
+    <button id="btnExitZen" type="button" class="zen-exit-pill" title="Exit Zen Mode (Esc or Ctrl+\)">
+      <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
+      <span>Exit Focus</span>
+    </button>
+
+    <!-- Slim Top Toolbar -->
+    <header class="top-toolbar" role="banner">
+      <!-- Left: Outline Toggle, Brand, Filename, File Actions -->
+      <div class="toolbar-group">
+        <button id="btnToggleOutline" type="button" class="tool-btn active" title="Toggle Outline & Files Sidebar (Ctrl/Cmd + Shift + O)" aria-label="Toggle Outline Sidebar">
+          <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>
+        </button>
+
+        <div class="brand-mark hide-mobile">
+          <span class="brand-dot"></span>
+          <span>Vellum</span>
+        </div>
+
+        <div class="doc-filename-wrap">
+          <input id="docFilenameInput" type="text" class="doc-filename-input" value="editorial-guide.md" aria-label="Document filename" title="Click to rename document" />
+          <div id="unsavedIndicator" class="unsaved-indicator" title="Working copy autosaved to browser storage">
+            <span class="unsaved-dot"></span>
+            <span id="unsavedText" class="hide-mobile">Saved</span>
+          </div>
+        </div>
+
+        <div class="toolbar-divider hide-mobile"></div>
+
+        <button id="btnNewFile" type="button" class="tool-btn" title="New blank document">
+          <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="M9 15h6"/></svg>
+          <span class="hide-mobile">New</span>
+        </button>
+
+        <button id="btnOpenFile" type="button" class="tool-btn" title="Open .md / .markdown / .txt file (Ctrl/Cmd + O)">
+          <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg>
+          <span class="hide-mobile">Open</span>
+        </button>
+
+        <button id="btnSaveFile" type="button" class="tool-btn" title="Save back to file or download .md (Ctrl/Cmd + S)">
+          <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></svg>
+          <span class="hide-mobile">Save</span>
+        </button>
+      </div>
+
+      <!-- Center: View Mode Segmented Switcher (Read / Split / Source) -->
+      <div class="mode-switcher" role="group" aria-label="View mode">
+        <button id="btnModeRead" type="button" class="mode-btn" data-mode-target="read" title="Read Mode — Rendered view only (Ctrl/Cmd + 1)">
+          <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          <span>Read</span>
+        </button>
+        <button id="btnModeSplit" type="button" class="mode-btn active hide-mobile" data-mode-target="split" title="Split Mode — Synchronized Source & Rendered views (Ctrl/Cmd + 2)">
+          <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M12 3v18"/></svg>
+          <span>Split</span>
+        </button>
+        <button id="btnModeSource" type="button" class="mode-btn" data-mode-target="source" title="Source Mode — Raw Markdown editor (Ctrl/Cmd + 3)">
+          <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          <span>Source</span>
+        </button>
+      </div>
+
+      <!-- Right: Undo/Redo, Find, Zen, Export, Appearance, Shortcuts -->
+      <div class="toolbar-group">
+        <button id="btnUndo" type="button" class="tool-btn" title="Undo across both views (Ctrl/Cmd + Z)" aria-label="Undo" disabled>
+          <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+        </button>
+        <button id="btnRedo" type="button" class="tool-btn" title="Redo across both views (Ctrl/Cmd + Shift + Z)" aria-label="Redo" disabled>
+          <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></svg>
+        </button>
+
+        <div class="toolbar-divider hide-mobile"></div>
+
+        <button id="btnToggleFind" type="button" class="tool-btn" title="Find in document (Ctrl/Cmd + F)" aria-label="Find in document">
+          <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        </button>
+
+        <button id="btnToggleZen" type="button" class="tool-btn hide-mobile" title="Focus / Zen mode (Ctrl/Cmd + \)" aria-label="Toggle Focus Mode">
+          <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+        </button>
+
+        <!-- Export Dropdown -->
+        <div class="dropdown-wrap">
+          <button id="btnExportMenu" type="button" class="tool-btn" title="Export HTML or Print PDF" aria-expanded="false">
+            <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+            <span class="hide-mobile">Export</span>
+          </button>
+          <div id="exportDropdown" class="dropdown-menu" role="menu">
+            <button id="btnCopyHtml" type="button" class="dropdown-item" role="menuitem">
+              <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+              <span>Copy as Clean HTML</span>
+            </button>
+            <button id="btnDownloadHtml" type="button" class="dropdown-item" role="menuitem">
+              <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span>Download Styled .html</span>
+            </button>
+            <button id="btnPrintPdf" type="button" class="dropdown-item" role="menuitem">
+              <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+              <span>Print / Save as PDF</span>
+            </button>
+          </div>
+        </div>
+
+        <button id="btnOpenSettings" type="button" class="tool-btn" title="Typography & Theme Settings (Ctrl/Cmd + ,)" aria-label="Open Appearance Settings">
+          <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>
+          <span class="hide-mobile">Appearance</span>
+        </button>
+
+        <button id="btnOpenShortcuts" type="button" class="tool-btn" title="Keyboard Shortcuts (?)" aria-label="Keyboard Shortcuts">
+          <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="M6 8h.001"/><path d="M10 8h.001"/><path d="M14 8h.001"/><path d="M18 8h.001"/><path d="M8 12h.001"/><path d="M12 12h.001"/><path d="M16 12h.001"/><path d="M7 16h10"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Collapsible Find in Document Bar -->
+    <div id="findBar" class="find-bar" role="search" aria-label="Find in document">
+      <div class="find-input-wrap">
+        <input id="findInput" type="text" class="find-input" placeholder="Find in document..." aria-label="Search query" />
+        <span id="findCount" class="find-count">0 / 0</span>
+      </div>
+      <button id="btnFindPrev" type="button" class="tool-btn" title="Previous match (Shift + Enter)" aria-label="Previous match">
+        <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>
+      </button>
+      <button id="btnFindNext" type="button" class="tool-btn" title="Next match (Enter)" aria-label="Next match">
+        <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <button id="btnCloseFind" type="button" class="tool-btn" title="Close Find Bar (Esc)" aria-label="Close Find">
+        <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+
+    <!-- Main Workspace: Sidebar + Source/Rendered Panes -->
+    <main class="workspace-main">
+      <!-- Collapsible Outline & Recent Files Sidebar -->
+      <aside id="outlineSidebar" class="outline-sidebar" aria-label="Document Outline and Files">
+        <div class="sidebar-tabs" role="tablist">
+          <button id="tabBtnOutline" type="button" class="sidebar-tab active" role="tab" aria-selected="true">Outline</button>
+          <button id="tabBtnFiles" type="button" class="sidebar-tab" role="tab" aria-selected="false">Files & Samples</button>
+        </div>
+
+        <!-- Outline Panel -->
+        <div id="panelOutline" class="sidebar-panel active" role="tabpanel">
+          <ul id="tocList" class="toc-list"></ul>
+        </div>
+
+        <!-- Recent Files & Edge-Case Presets Panel -->
+        <div id="panelFiles" class="sidebar-panel" role="tabpanel">
+          <div class="sidebar-section-label">Recent Files</div>
+          <div id="recentFilesList"></div>
+
+          <div class="sidebar-section-label" style="margin-top:10px;">Built-in Showcase & Tests</div>
+          <button id="btnLoadSampleDefault" type="button" class="recent-file-item">
+            <span class="recent-file-name">editorial-guide.md</span>
+            <span class="recent-file-meta">Default Typography & Two-Way Guide</span>
+          </button>
+          <button id="btnLoadSampleTagalog" type="button" class="recent-file-item">
+            <span class="recent-file-name">tipograpiya-pilipinas.md</span>
+            <span class="recent-file-meta">Filipino / Tagalog Archival Essay</span>
+          </button>
+          <button id="btnLoadSampleEdge" type="button" class="recent-file-item">
+            <span class="recent-file-name">edge-cases-torture.md</span>
+            <span class="recent-file-meta">Nested Lists, Tables & Code w/ MD</span>
+          </button>
+          <button id="btnLoadSampleLarge" type="button" class="recent-file-item">
+            <span class="recent-file-name">benchmark-5200-lines.md</span>
+            <span class="recent-file-meta">5,200+ Lines Stress Test</span>
+          </button>
+        </div>
+      </aside>
+
+      <!-- Dual Synchronized Panes -->
+      <div id="panesContainer" class="panes-container" data-mode="split">
+        <!-- Left: Raw Markdown Source Pane (CodeMirror 6 + Fallback) -->
+        <section class="source-pane" aria-label="Markdown Source Editor">
+          <div class="pane-subbar">
+            <span>MARKDOWN SOURCE</span>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;">
+                <input id="chkLineNumbers" type="checkbox" checked style="accent-color:var(--accent);" />
+                <span>Line Numbers</span>
+              </label>
+              <span id="editorEngineLabel">CodeMirror 6</span>
+            </div>
+          </div>
+          <div id="cmEditorMount" class="cm-editor-mount">
+            <!-- Fallback textarea stays functional immediately while CodeMirror 6 mounts -->
+            <div id="fallbackEditorWrap" class="fallback-editor-wrap">
+              <div id="fallbackGutter" class="fallback-gutter" aria-hidden="true">1</div>
+              <textarea id="fallbackSourceTextarea" class="fallback-textarea" spellcheck="false" aria-label="Markdown source editor"></textarea>
+            </div>
+          </div>
+        </section>
+
+        <!-- Right: Rendered Editorial View (with In-Place Block Editing) -->
+        <section class="rendered-pane" aria-label="Rendered Document View">
+          <div class="pane-subbar">
+            <span>RENDERED VIEW — CLICK ANY BLOCK TO EDIT IN PLACE</span>
+            <span id="syncStatusLabel">Scroll Sync Active</span>
+          </div>
+          <div id="renderedScrollContainer" class="rendered-scroll-container">
+            <article id="markdownRenderedArticle" class="markdown-document"></article>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- Quiet Status Bar -->
+    <footer class="status-bar" role="contentinfo">
+      <div class="status-metrics">
+        <span id="statWords">0 words</span>
+        <span id="statChars">0 characters</span>
+        <span id="statLines">0 lines</span>
+        <span id="statReadingTime">1 min read</span>
+      </div>
+      <div class="status-metrics">
+        <span id="statLineEnding">LF</span>
+        <span id="statActiveBlock" class="hide-mobile">Ready</span>
+      </div>
+    </footer>
+
+    <!-- Customization Slide-Over Drawer -->
+    <div id="settingsBackdrop" class="drawer-backdrop" aria-hidden="true">
+      <aside class="settings-drawer" role="dialog" aria-labelledby="drawerTitle">
+        <div class="drawer-header">
+          <h2 id="drawerTitle" class="drawer-title">Appearance & Typography</h2>
+          <button id="btnCloseSettings" type="button" class="tool-btn" aria-label="Close appearance settings">
+            <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+
+        <div class="drawer-body">
+          <!-- Live Typography Preview Box -->
+          <div class="live-preview-box">
+            <div class="live-preview-heading">The Craft of Durable Type</div>
+            <p class="live-preview-body">Good typography is measured in rhythm, proportion, and quiet legibility across every theme.</p>
+          </div>
+
+          <!-- Surface Theme -->
+          <div class="setting-section">
+            <span class="setting-label">Theme Surface</span>
+            <div class="segmented-options" role="group" aria-label="Color theme">
+              <button id="btnThemeLight" type="button" class="seg-option-btn active" data-theme-val="light">Light</button>
+              <button id="btnThemeSepia" type="button" class="seg-option-btn" data-theme-val="sepia">Sepia</button>
+              <button id="btnThemeDark" type="button" class="seg-option-btn" data-theme-val="dark">Dark</button>
+            </div>
+          </div>
+
+          <!-- Accent Color Presets + Custom Picker -->
+          <div class="setting-section">
+            <div class="setting-label">
+              <span>Accent Color</span>
+              <input id="inputCustomAccent" type="color" value="#B84A27" title="Custom accent color" aria-label="Custom accent color" style="width:24px;height:24px;border:none;background:none;cursor:pointer;" />
+            </div>
+            <div id="accentSwatchRow" class="swatch-row">
+              <button type="button" class="accent-swatch active" data-accent-hex="#B84A27" style="background:#B84A27;" title="Terracotta Vermilion" aria-label="Terracotta Vermilion"></button>
+              <button type="button" class="accent-swatch" data-accent-hex="#2A6F4E" style="background:#2A6F4E;" title="Botanical Pine" aria-label="Botanical Pine"></button>
+              <button type="button" class="accent-swatch" data-accent-hex="#255C99" style="background:#255C99;" title="Archival Cobalt" aria-label="Archival Cobalt"></button>
+              <button type="button" class="accent-swatch" data-accent-hex="#B4690E" style="background:#B4690E;" title="Raw Ochre" aria-label="Raw Ochre"></button>
+              <button type="button" class="accent-swatch" data-accent-hex="#8F2D56" style="background:#8F2D56;" title="Burgundy Ink" aria-label="Burgundy Ink"></button>
+            </div>
+          </div>
+
+          <!-- Font Pickers -->
+          <div class="setting-section">
+            <label for="selectFontBody" class="setting-label">Body Font</label>
+            <select id="selectFontBody" class="setting-select">
+              <option value="newsreader">Newsreader (Editorial Serif)</option>
+              <option value="lora">Lora (Warm Book Serif)</option>
+              <option value="jakarta">Plus Jakarta Sans (Humanist Sans)</option>
+              <option value="system-serif">System Serif (Georgia)</option>
+              <option value="system-sans">System Sans-Serif</option>
+            </select>
+          </div>
+
+          <div class="setting-section">
+            <label for="selectFontHeading" class="setting-label">Heading Font</label>
+            <select id="selectFontHeading" class="setting-select">
+              <option value="instrument">Instrument Serif (Display Editorial)</option>
+              <option value="fraunces">Fraunces (Old-Style Soft Serif)</option>
+              <option value="newsreader">Newsreader (Editorial Serif)</option>
+              <option value="jakarta">Plus Jakarta Sans (Crisp Sans)</option>
+              <option value="system">System Font</option>
+            </select>
+          </div>
+
+          <div class="setting-section">
+            <label for="selectFontCode" class="setting-label">Monospace / Code Font</label>
+            <select id="selectFontCode" class="setting-select">
+              <option value="jetbrains">JetBrains Mono</option>
+              <option value="firacode">Fira Code</option>
+              <option value="ibmplex">IBM Plex Mono</option>
+              <option value="system-mono">System Monospace</option>
+            </select>
+          </div>
+
+          <!-- Type Scale Sliders -->
+          <div class="setting-section">
+            <div class="setting-label">
+              <label for="rangeFontSize">Font Size</label>
+              <span id="valFontSize">18px</span>
+            </div>
+            <input id="rangeFontSize" type="range" class="range-slider" min="14" max="24" step="1" value="18" />
+          </div>
+
+          <div class="setting-section">
+            <div class="setting-label">
+              <label for="rangeLineHeight">Line Height (Leading)</label>
+              <span id="valLineHeight">1.72</span>
+            </div>
+            <input id="rangeLineHeight" type="range" class="range-slider" min="1.4" max="2.0" step="0.04" value="1.72" />
+          </div>
+
+          <div class="setting-section">
+            <div class="setting-label">
+              <label for="rangeParaSpacing">Paragraph Spacing</label>
+              <span id="valParaSpacing">1.25em</span>
+            </div>
+            <input id="rangeParaSpacing" type="range" class="range-slider" min="0.75" max="2.0" step="0.05" value="1.25" />
+          </div>
+
+          <!-- Content Measure -->
+          <div class="setting-section">
+            <span class="setting-label">Reading Measure (Column Width)</span>
+            <div class="segmented-options" role="group" aria-label="Reading column width">
+              <button id="btnMeasureNarrow" type="button" class="seg-option-btn" data-measure-val="narrow">Narrow (56ch)</button>
+              <button id="btnMeasureComfort" type="button" class="seg-option-btn active" data-measure-val="comfortable">Comfort (68ch)</button>
+              <button id="btnMeasureWide" type="button" class="seg-option-btn" data-measure-val="wide">Wide (86ch)</button>
+            </div>
+          </div>
+
+          <div style="margin-top:8px;padding-top:12px;border-top:1px solid var(--border);">
+            <button id="btnResetSettings" type="button" class="tool-btn" style="width:100%;border-color:var(--border-strong);">
+              Reset Appearance to Defaults
+            </button>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Keyboard Shortcuts Modal -->
+    <div id="shortcutsModal" class="modal-backdrop" aria-hidden="true">
+      <div class="modal-card" role="dialog" aria-labelledby="shortcutsTitle">
+        <div class="drawer-header">
+          <h2 id="shortcutsTitle" class="drawer-title">Keyboard Shortcuts</h2>
+          <button id="btnCloseShortcuts" type="button" class="tool-btn" aria-label="Close shortcuts dialog">
+            <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+        <div class="shortcut-grid">
+          <span>Open Markdown File</span><kbd>Ctrl / Cmd + O</kbd>
+          <span>Save File In-Place / Download</span><kbd>Ctrl / Cmd + S</kbd>
+          <span>Switch to Read Mode</span><kbd>Ctrl / Cmd + 1</kbd>
+          <span>Switch to Split Mode</span><kbd>Ctrl / Cmd + 2</kbd>
+          <span>Switch to Source Mode</span><kbd>Ctrl / Cmd + 3</kbd>
+          <span>Toggle Outline Sidebar</span><kbd>Ctrl / Cmd + Shift + O</kbd>
+          <span>Open Appearance Settings</span><kbd>Ctrl / Cmd + ,</kbd>
+          <span>Find in Document</span><kbd>Ctrl / Cmd + F</kbd>
+          <span>Focus / Zen Mode</span><kbd>Ctrl / Cmd + \</kbd>
+          <span>Undo / Redo (Across Both Views)</span><kbd>Ctrl / Cmd + Z / Y</kbd>
+          <span>Commit Inline Block Edit</span><kbd>Ctrl / Cmd + Enter</kbd>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drag & Drop Overlay -->
+    <div id="dropOverlay" class="drop-overlay">
+      <span>Drop your .md, .markdown, or .txt file to open</span>
+    </div>
+
+    <!-- Subtle Toast Pill -->
+    <div id="toastPill" class="toast-pill" role="status" aria-live="polite"></div>
+  </div>
+
+  <!-- Application Logic & Two-Way Sync Engine -->
+  <script type="module">
+    const STORAGE_KEYS = {
+      SETTINGS: 'vellum_md_settings_v1',
+      AUTOSAVE_DOC: 'vellum_md_autosave_doc_v1',
+      AUTOSAVE_META: 'vellum_md_autosave_meta_v1',
+      RECENT_FILES: 'vellum_md_recent_files_v1'
+    };
+
+    const FONT_OPTIONS = {
+      body: {
+        newsreader: "'Newsreader', Georgia, serif",
+        lora: "'Lora', Georgia, serif",
+        jakarta: "'Plus Jakarta Sans', -apple-system, sans-serif",
+        'system-serif': "Georgia, 'Times New Roman', serif",
+        'system-sans': "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+      },
+      heading: {
+        instrument: "'Instrument Serif', Georgia, serif",
+        fraunces: "'Fraunces', Georgia, serif",
+        newsreader: "'Newsreader', Georgia, serif",
+        jakarta: "'Plus Jakarta Sans', -apple-system, sans-serif",
+        system: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+      },
+      code: {
+        jetbrains: "'JetBrains Mono', monospace",
+        firacode: "'Fira Code', monospace",
+        ibmplex: "'IBM Plex Mono', monospace",
+        'system-mono': "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+      }
+    };
+
+    const MEASURE_PRESETS = {
+      narrow: '56ch',
+      comfortable: '68ch',
+      wide: '86ch'
+    };
+
+    const DEFAULT_DOCUMENT = `# Vellum — An Editorial Markdown Studio
+
+> "Typography is the craft of endowing human language with a durable visual form." — Robert Bringhurst, *The Elements of Typographic Style*
+
+Welcome to **Vellum**, a client-side Markdown reader and two-way editor designed around book-grade typography and surgical source fidelity. Every paragraph, heading, list, table, and code block in the **Rendered View** is mapped directly to its exact line range (\`token.map\`) in the **Markdown Source**.
+
+Click any block in the rendered pane—or toggle a task checkbox below—to edit it in place without mangling your surrounding Markdown formatting, list markers, or indentation.
+
+## 1. Two-Way Editing & Line-Range Fidelity
+
+Unlike conventional WYSIWYG editors that serialize the entire DOM back through a lossy HTML-to-Markdown converter, Vellum updates **only the exact source lines** of the block you touched:
+
+- [x] **Surgical Block Replacement:** Clicking a rendered block opens an inline source editor scoped to \`[startLine, endLine)\`.
+- [x] **Interactive Task Lists:** Clicking any checkbox in the rendered document flips \`[ ]\` to \`[x]\` on that exact line in the source.
+- [ ] **Unified History Stack:** Press \`Ctrl/Cmd + Z\` or \`Ctrl/Cmd + Shift + Z\` to undo and redo seamlessly across both rendered edits and raw source edits.
+- [ ] **Scroll Synchronization:** Switch to **Split Mode** (\`Ctrl/Cmd + 2\`) to scroll source and rendered panes in proportional lockstep.
+
+### Typographic Scale & Reading Measure
+
+Long-form writing reads best when lines are held between **60 and 75 characters** with generous leading. Open the **Appearance Panel** (\`Ctrl/Cmd + ,\`) in the top toolbar to customize:
+
+1. **Curated Font Pairings:** Mix *Newsreader*, *Lora*, or *Fraunces* for editorial prose with *Instrument Serif* or *Plus Jakarta Sans* for headings and *JetBrains Mono* for code.
+2. **Surface Themes:** Switch between **Warm Paper (Light)**, **Carbon Ink (Dark)**, and **Archival Vellum (Sepia)**, paired with five editorial accent colors.
+3. **Measure & Rhythm:** Adjust font size (\`14px–24px\`), line height (\`1.4–2.0\`), paragraph spacing, and column measure (*Narrow*, *Comfortable*, or *Wide*).
+
+## 2. GitHub Flavored Markdown & Structured Data
+
+Vellum supports full GitHub Flavored Markdown (GFM), including tables with inline formatting, footnotes[^1], ~~strikethrough~~, autolinks like https://commonmark.org, and interactive table cells (double-click any table cell in the rendered view to edit it directly, or click the table's edit badge to edit the raw pipe table).
+
+| Feature | Implementation Strategy | Source Preservation | Shortcut |
+| :--- | :--- | :---: | ---: |
+| **Read Mode** | Centered book column with scroll-spy outline | Full fidelity | \`Mod + 1\` |
+| **Split Mode** | Side-by-side CodeMirror 6 + live rendered pane | Line-mapped sync | \`Mod + 2\` |
+| **Source Mode** | Focused syntax-highlighted Markdown editor | Direct buffer | \`Mod + 3\` |
+| **Zen Focus** | Hides all application chrome for distraction-free writing | Auto-saved | \`Mod + \\\\\` |
+
+## 3. Code Blocks & Math Notation
+
+Fenced code blocks are highlighted automatically and adapt to your active theme. Even Markdown syntax nested inside a fenced code block is preserved safely without confusing the block mapper:
+
+\`\`\`javascript
+// Map a rendered block edit back to exact Markdown source lines
+function applyBlockSplice(sourceText, startLine, endLine, replacementRaw) {
+  const eol = sourceText.includes('\\r\\n') ? '\\r\\n' : '\\n';
+  const lines = sourceText.split(/\\r?\\n/);
+  const updated = [
+    ...lines.slice(0, startLine),
+    ...replacementRaw.split(/\\r?\\n/),
+    ...lines.slice(endLine)
+  ];
+  return updated.join(eol);
+}
+\`\`\`
+
+Vellum also renders inline math such as Euler's identity $e^{i\\pi} + 1 = 0$ and display equations via KaTeX:
+
+$$
+\\mathcal{L}(\\theta) = \\frac{1}{N} \\sum_{i=1}^{N} \\left( y_i - f_\\theta(x_i) \\right)^2 + \\lambda \\|\\theta\\|_2^2
+$$
+
+## 4. Multilingual & Archival Note (Tagalog / Filipino)
+
+*Ang mabuting tipograpiya ay tahimik na naglilingkod sa mambabasa.* Sa pamamagitan ng malinaw na antas ng mga pamagat, tamang agwat ng mga linya, at maingat na pagpili ng kulay, nagiging mas magaan at kasiya-siya ang pagbabasa at pagsusulat ng mahahabang dokumento sa **Vellum**. Maaari kang magbukas ng anumang \`.md\`, \`.markdown\`, o \`.txt\` na talaksan mula sa iyong kompyuter—lahat ng pagbabago ay nananatiling pribado sa iyong browser.
+
+[^1]: Footnotes are automatically linked and collected at the bottom of the rendered page while remaining editable in place.
+`;
+
+    const SAMPLE_TAGALOG = `# Talaan ng Disenyo at Tipograpiya sa Pilipinas
+
+> "Ang wika ay kaluluwa ng isang bansa, at ang tipograpiya ang nagbibigay-katawan dito."
+
+Sa kasaysayan ng paglilimbag sa Pilipinas—mula sa *Doctrina Christiana* noong 1593 hanggang sa makabagong digital na publikasyon sa Bacoor, Maynila, at Cebu—mahalaga ang kalinawan ng bawat titik at tuldik (tulad ng *maragsâ*, *malumì*, at *mabilís*).
+
+## Mga Layunin sa Pagsusuri
+
+- [x] Suportahan ang mga bantas at tuldik sa Filipino (*ngunit*, *datapwat*, *gunita*)
+- [x] Panatilihin ang eksaktong linya sa bawat talata kapag nag-e-edit
+- [ ] Magdagdag ng mga tala para sa baybayin at makabagong ortograpiya
+
+| Rehiyon | Pangunahing Wika | Halimbawa ng Salita | Katangian |
+| :--- | :--- | :--- | :--- |
+| **Calabarzon** | Tagalog | *Maligayang pagdating* | Malumanay at malinaw |
+| **Gitnang Visayas** | Cebuano | *Maayong buntag* | Masigla at matatag |
+| **Ilocos** | Ilokano | *Naimbag nga bigat* | Matipid sa pantig |
+`;
+
+    const SAMPLE_EDGE_CASES = `# Edge Case Torture Test (CRLF, Nested Lists, Code with Markdown)
+
+1. First level ordered item
+   * Second level unordered with \`* \` marker
+     - Third level unordered with \`- \` marker
+       + Fourth level unordered with \`+ \` marker and **bold _nested_ emphasis**
+2. Second ordered item with a task:
+   - [x] Completed nested task
+   - [ ] Pending nested task with \`inline code | pipe\`
+
+\`\`\`markdown
+# This heading is inside a fenced code block
+- [ ] It must NOT be treated as an interactive task list
+| Or | A | Table |
+\`\`\`
+
+| Column with \`\\|\` escaped | Formatting | Math & Code |
+| :--- | :---: | ---: |
+| Cell with **bold** and *italic* | ~~Deleted~~ text | \`x = y + 1\` |
+| Second row | [CommonMark Spec](https://spec.commonmark.org) | $a^2 + b^2 = c^2$ |
+`;
+
+    function generateLargeBenchmarkDoc() {
+      const chunks = [
+        `# High-Volume 5,200+ Line Performance Benchmark\r\n\r\nThis synthetic manuscript contains over **5,200 lines** of Markdown (with CRLF line endings) to verify smooth typing, debounced rendering, and instant surgical block editing.\r\n`
+      ];
+      for (let section = 1; section <= 130; section++) {
+        chunks.push(
+          `## Section ${section}: Architectural & Typographic Notes\r\n\r\n` +
+          `Paragraph ${section}.1 — In editorial systems, line measure and vertical rhythm govern reading endurance. Clicking this paragraph edits lines directly in the 5,200-line buffer without re-serializing unrelated sections.\r\n\r\n` +
+          `- [x] Verified line mapping for Section ${section}\r\n` +
+          `- [ ] Pending review of sub-item ${section}.b\r\n\r\n` +
+          `| Metric | Section ${section} Value | Target Threshold |\r\n` +
+          `| :--- | :---: | ---: |\r\n` +
+          `| Frame Budget | \`< 16ms\` | **60 FPS** |\r\n` +
+          `| Block Splice | \`O(lines)\` | Instant |\r\n\r\n` +
+          `\`\`\`javascript\r\n` +
+          `const sectionIndex = ${section};\r\n` +
+          `console.log("Section", sectionIndex);\r\n` +
+          `\`\`\`\r\n`
+        );
+      }
+      return chunks.join('\r\n');
+    }
+
+    // --- State Management ---
+    let state = {
+      filename: 'editorial-guide.md',
+      sourceText: DEFAULT_DOCUMENT,
+      savedText: DEFAULT_DOCUMENT,
+      fileHandle: null,
+      dirty: false,
+      activeBlockIndex: null,
+      findQuery: '',
+      findMatches: [],
+      findCurrentIndex: 0,
+      zenMode: false,
+      undoStack: [],
+      redoStack: [],
+      settings: loadSettings()
+    };
+
+    let cmView = null;
+    let isUpdatingEditorProgrammatically = false;
+    let isSyncingScroll = false;
+    let renderDebounceTimer = null;
+    let autosaveTimer = null;
+    let parsedBlocksCache = [];
+    let parsedHeadingsCache = [];
+
+    // --- Initialize Markdown-it with GFM, Footnotes, Highlight.js & KaTeX ---
+    const md = window.markdownit({
+      html: true,
+      linkify: true,
+      typographer: true,
+      breaks: false,
+      highlight: function (str, lang) {
+        if (window.hljs && lang && window.hljs.getLanguage(lang)) {
+          try {
+            return window.hljs.highlight(str, { language: lang, ignoreIllegals: true }).value;
+          } catch (_) {}
+        }
+        return '';
+      }
+    });
+
+    if (window.markdownitFootnote) {
+      md.use(window.markdownitFootnote);
+    }
+
+    // --- Helper Functions ---
+    function showToast(msg) {
+      const pill = document.getElementById('toastPill');
+      if (!pill) return;
+      pill.textContent = msg;
+      pill.classList.add('visible');
+      clearTimeout(pill._timer);
+      pill._timer = setTimeout(() => pill.classList.remove('visible'), 2200);
+    }
+
+    function detectLineEnding(text) {
+      return text.includes('\r\n') ? '\r\n' : '\n';
+    }
+
+    function splitLines(text) {
+      return text.split(/\r?\n/);
+    }
+
+    function spliceMarkdownBlock(sourceText, startLine, endLine, replacementRaw) {
+      const eol = detectLineEnding(sourceText);
+      const lines = splitLines(sourceText);
+      const s = Math.max(0, Math.min(startLine, lines.length));
+      const e = Math.max(s, Math.min(endLine, lines.length));
+      const repLines = splitLines(replacementRaw);
+      const next = [...lines.slice(0, s), ...repLines, ...lines.slice(e)];
+      return next.join(eol);
+    }
+
+    function toggleTaskCheckboxOnLine(sourceText, lineIndex) {
+      const eol = detectLineEnding(sourceText);
+      const lines = splitLines(sourceText);
+      if (lineIndex < 0 || lineIndex >= lines.length) return sourceText;
+      const taskRegex = /^(\s*(?:[-*+]|\d+[.)])\s+\[)([ xX])(\]\s*.*)$/;
+      const match = lines[lineIndex].match(taskRegex);
+      if (!match) return sourceText;
+      const nextMark = match[2] === ' ' ? 'x' : ' ';
+      lines[lineIndex] = `${match[1]}${nextMark}${match[3]}`;
+      return lines.join(eol);
+    }
+
+    function updateTableCellOnLine(sourceText, lineIndex, colIndex, newCellText) {
+      const eol = detectLineEnding(sourceText);
+      const lines = splitLines(sourceText);
+      if (lineIndex < 0 || lineIndex >= lines.length) return sourceText;
+      const line = lines[lineIndex];
+      const hasLead = /^\s*\|/.test(line);
+      const hasTrail = /\|\s*$/.test(line);
+      const core = line.trim().replace(/^\|/, '').replace(/\|$/, '');
+      const cells = core.split(/(?<!\\)\|/);
+      if (colIndex < 0 || colIndex >= cells.length) return sourceText;
+      const cleaned = newCellText.replace(/\r?\n/g, ' ').replace(/(?<!\\)\|/g, '\\|').trim();
+      cells[colIndex] = ` ${cleaned} `;
+      let rebuilt = cells.join('|');
+      if (hasLead) rebuilt = '|' + rebuilt;
+      if (hasTrail) rebuilt = rebuilt + '|';
+      lines[lineIndex] = rebuilt;
+      return lines.join(eol);
+    }
+
+    // --- Settings Persistence & Application ---
+    function getDefaultSettings() {
+      let preferredTheme = 'light';
+      try {
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          preferredTheme = 'dark';
+        }
+      } catch (_) {}
+      return {
+        theme: preferredTheme,
+        accent: '#B84A27',
+        fontBody: 'newsreader',
+        fontHeading: 'instrument',
+        fontCode: 'jetbrains',
+        fontSize: 18,
+        lineHeight: 1.72,
+        paraSpacing: 1.25,
+        measure: 'comfortable',
+        showLineNumbers: true,
+        outlineOpen: window.innerWidth > 900,
+        viewMode: window.innerWidth <= 768 ? 'read' : 'split'
+      };
+    }
+
+    function loadSettings() {
+      const defaults = getDefaultSettings();
+      try {
+        const raw = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+        return raw ? { ...defaults, ...JSON.parse(raw) } : defaults;
+      } catch (_) {
+        return defaults;
+      }
+    }
+
+    function saveSettings() {
+      try {
+        localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(state.settings));
+      } catch (_) {}
+    }
+
+    function hexToRgba(hex, alpha) {
+      const clean = (hex || '#B84A27').replace('#', '');
+      const full = clean.length === 3 ? clean.split('').map(c => c + c).join('') : clean;
+      const num = parseInt(full, 16) || 0xb84a27;
+      return `rgba(${(num >> 16) & 255}, ${(num >> 8) & 255}, ${num & 255}, ${alpha})`;
+    }
+
+    function applySettings() {
+      const s = state.settings;
+      const root = document.documentElement;
+      root.setAttribute('data-theme', s.theme);
+      root.style.setProperty('--font-body', FONT_OPTIONS.body[s.fontBody] || FONT_OPTIONS.body.newsreader);
+      root.style.setProperty('--font-heading', FONT_OPTIONS.heading[s.fontHeading] || FONT_OPTIONS.heading.instrument);
+      root.style.setProperty('--font-code', FONT_OPTIONS.code[s.fontCode] || FONT_OPTIONS.code.jetbrains);
+      root.style.setProperty('--doc-font-size', `${s.fontSize}px`);
+      root.style.setProperty('--doc-line-height', String(s.lineHeight));
+      root.style.setProperty('--doc-para-spacing', `${s.paraSpacing}em`);
+      root.style.setProperty('--doc-measure', MEASURE_PRESETS[s.measure] || MEASURE_PRESETS.comfortable);
+      root.style.setProperty('--accent', s.accent);
+      root.style.setProperty('--accent-soft', hexToRgba(s.accent, s.theme === 'dark' ? 0.22 : 0.12));
+
+      // Sync code syntax theme
+      const hljsLight = document.getElementById('hljs-light-theme');
+      const hljsDark = document.getElementById('hljs-dark-theme');
+      if (hljsLight && hljsDark) {
+        hljsLight.disabled = s.theme === 'dark';
+        hljsDark.disabled = s.theme !== 'dark';
+      }
+
+      // Sync Line Numbers
+      const mount = document.getElementById('cmEditorMount');
+      const chk = document.getElementById('chkLineNumbers');
+      if (mount) mount.classList.toggle('hide-line-numbers', !s.showLineNumbers);
+      if (chk) chk.checked = !!s.showLineNumbers;
+
+      // Sync Outline Sidebar
+      const sidebar = document.getElementById('outlineSidebar');
+      const btnOutline = document.getElementById('btnToggleOutline');
+      if (sidebar) sidebar.classList.toggle('collapsed', !s.outlineOpen);
+      if (btnOutline) btnOutline.classList.toggle('active', !!s.outlineOpen);
+
+      // Sync View Mode
+      const panes = document.getElementById('panesContainer');
+      if (panes) panes.setAttribute('data-mode', s.viewMode);
+      document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-mode-target') === s.viewMode);
+      });
+
+      // Sync Drawer UI controls
+      document.querySelectorAll('[data-theme-val]').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-theme-val') === s.theme);
+      });
+      document.querySelectorAll('[data-measure-val]').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-measure-val') === s.measure);
+      });
+      document.querySelectorAll('.accent-swatch').forEach(sw => {
+        sw.classList.toggle('active', sw.getAttribute('data-accent-hex').toLowerCase() === s.accent.toLowerCase());
+      });
+      const customColor = document.getElementById('inputCustomAccent');
+      if (customColor) customColor.value = s.accent;
+      const selBody = document.getElementById('selectFontBody');
+      if (selBody) selBody.value = s.fontBody;
+      const selHead = document.getElementById('selectFontHeading');
+      if (selHead) selHead.value = s.fontHeading;
+      const selCode = document.getElementById('selectFontCode');
+      if (selCode) selCode.value = s.fontCode;
+
+      const rSize = document.getElementById('rangeFontSize');
+      const vSize = document.getElementById('valFontSize');
+      if (rSize) rSize.value = s.fontSize;
+      if (vSize) vSize.textContent = `${s.fontSize}px`;
+
+      const rLead = document.getElementById('rangeLineHeight');
+      const vLead = document.getElementById('valLineHeight');
+      if (rLead) rLead.value = s.lineHeight;
+      if (vLead) vLead.textContent = Number(s.lineHeight).toFixed(2);
+
+      const rPara = document.getElementById('rangeParaSpacing');
+      const vPara = document.getElementById('valParaSpacing');
+      if (rPara) rPara.value = s.paraSpacing;
+      if (vPara) vPara.textContent = `${Number(s.paraSpacing).toFixed(2)}em`;
+
+      saveSettings();
+    }
+
+    // --- Math (KaTeX) Post-Processor ---
+    function renderMathInHtml(rawHtml) {
+      if (!window.katex) return rawHtml;
+      // Display math $$...$$
+      let processed = rawHtml.replace(/\$\$([\s\S]+?)\$\$/g, (_, tex) => {
+        try {
+          return window.katex.renderToString(tex.trim(), { displayMode: true, throwOnError: false });
+        } catch (_) {
+          return `$$${tex}$$`;
+        }
+      });
+      // Inline math $...$ (avoid matching currency like $100)
+      processed = processed.replace(/(?<![\\$])\$(?!\s)([^$\n]+?)(?<!\s)\$/g, (_, tex) => {
+        try {
+          return window.katex.renderToString(tex.trim(), { displayMode: false, throwOnError: false });
+        } catch (_) {
+          return `$${tex}$`;
+        }
+      });
+      return processed;
+    }
+
+    // --- Core Markdown Block Parser & Renderer ---
+    function renderDocument() {
+      const article = document.getElementById('markdownRenderedArticle');
+      if (!article) return;
+
+      const sourceText = state.sourceText;
+      updateStatusBar(sourceText);
+
+      // Handle Empty Document State gracefully
+      if (!sourceText.trim()) {
+        parsedBlocksCache = [];
+        parsedHeadingsCache = [];
+        renderOutlineSidebar([]);
+        article.innerHTML = `
+          <div class="empty-state-card">
+            <h2 class="empty-state-title">Drop a .md file here or start writing</h2>
+            <p class="empty-state-sub">Open a local Markdown file, switch to Source or Split view, or click below to begin a new block.</p>
+            <div class="empty-state-actions">
+              <button type="button" class="tool-btn tool-btn-primary" id="btnEmptyStartWriting">Start Writing</button>
+              <button type="button" class="tool-btn" id="btnEmptyOpenFile" style="border-color:var(--border-strong);">Open .md File</button>
+              <button type="button" class="tool-btn" id="btnEmptyLoadSample" style="border-color:var(--border-strong);">Load Editorial Sample</button>
+            </div>
+          </div>
+        `;
+        const btnStart = document.getElementById('btnEmptyStartWriting');
+        if (btnStart) {
+          btnStart.addEventListener('click', () => {
+            applySourceChange('# Untitled Document\n\nStart writing here...', 'start-writing');
+            openInlineBlockEditor(0);
+          });
+        }
+        const btnOpen = document.getElementById('btnEmptyOpenFile');
+        if (btnOpen) btnOpen.addEventListener('click', () => triggerOpenFile());
+        const btnSample = document.getElementById('btnEmptyLoadSample');
+        if (btnSample) {
+          btnSample.addEventListener('click', () => {
+            loadDocumentIntoWorkspace('editorial-guide.md', DEFAULT_DOCUMENT, null);
+          });
+        }
+        return;
+      }
+
+      const lines = splitLines(sourceText);
+      const env = {};
+      const tokens = md.parse(sourceText, env);
+
+      const blocks = [];
+      const headings = [];
+      let depth = 0;
+      let blockStartIdx = 0;
+
+      for (let i = 0; i < tokens.length; i++) {
+        const t = tokens[i];
+
+        if (t.type === 'heading_open' && t.map) {
+          const level = parseInt(t.tag.slice(1), 10) || 1;
+          const inlineTok = tokens[i + 1];
+          const rawTitle = inlineTok && inlineTok.type === 'inline' ? inlineTok.content : 'Section';
+          const id = `heading-line-${t.map[0]}`;
+          t.attrSet('id', id);
+          headings.push({
+            id,
+            level,
+            title: rawTitle.replace(/[*_`~]/g, ''),
+            startLine: t.map[0],
+            endLine: t.map[1]
+          });
+        }
+
+        if (depth === 0) {
+          blockStartIdx = i;
+        }
+
+        if (t.nesting === 1) depth++;
+        else if (t.nesting === -1) depth = Math.max(0, depth - 1);
+
+        if (depth === 0) {
+          const openTok = tokens[blockStartIdx];
+          if (openTok && openTok.map) {
+            const [startLine, endLine] = openTok.map;
+            const subTokens = tokens.slice(blockStartIdx, i + 1);
+            let blockHtml = md.renderer.render(subTokens, md.options, env);
+
+            // Process GFM Task List checkboxes with exact line numbers
+            blockHtml = enhanceBlockHtml(openTok, startLine, endLine, lines, blockHtml);
+
+            blocks.push({
+              index: blocks.length,
+              type: openTok.type.replace(/_open$/, ''),
+              startLine,
+              endLine,
+              raw: lines.slice(startLine, endLine).join('\n'),
+              html: blockHtml
+            });
+          }
+        }
+      }
+
+      // Render footnotes if any were collected in env.footnotes
+      let footnoteHtml = '';
+      if (env.footnotes && env.footnotes.list && env.footnotes.list.length > 0) {
+        const fullHtml = md.renderer.render(tokens, md.options, env);
+        const fnMatch = fullHtml.match(/<hr class="footnotes-sep">[\s\S]*$/);
+        if (fnMatch) footnoteHtml = fnMatch[0];
+      }
+
+      parsedBlocksCache = blocks;
+      parsedHeadingsCache = headings;
+      renderOutlineSidebar(headings);
+
+      const fragment = document.createDocumentFragment();
+
+      blocks.forEach((blk) => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'md-block';
+        wrapper.setAttribute('data-block-index', String(blk.index));
+        wrapper.setAttribute('data-start-line', String(blk.startLine));
+        wrapper.setAttribute('data-end-line', String(blk.endLine));
+
+        const badge = document.createElement('button');
+        badge.type = 'button';
+        badge.className = 'md-block-badge';
+        badge.setAttribute('title', `Click to edit lines ${blk.startLine + 1}–${blk.endLine} in place`);
+        badge.innerHTML = `<span>L${blk.startLine + 1}${blk.endLine > blk.startLine + 1 ? '–' + blk.endLine : ''} · Edit</span>`;
+        badge.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openInlineBlockEditor(blk.index);
+        });
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'md-block-content';
+
+        const sanitized = window.DOMPurify
+          ? window.DOMPurify.sanitize(renderMathInHtml(blk.html), {
+              ADD_ATTR: ['data-task-line', 'data-table-line', 'data-table-col', 'data-cell-editable', 'target', 'id']
+            })
+          : renderMathInHtml(blk.html);
+
+        contentDiv.innerHTML = sanitized;
+
+        // Graceful fallback for broken or relative images
+        contentDiv.querySelectorAll('img').forEach(img => {
+          img.addEventListener('error', () => {
+            const alt = img.getAttribute('alt') || 'Image';
+            const src = img.getAttribute('src') || '';
+            const card = document.createElement('div');
+            card.className = 'img-fallback-card';
+            card.innerHTML = `<svg class="icon-svg" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg><span>Relative or offline image: <strong>${alt}</strong> (<code>${src}</code>)</span>`;
+            img.replaceWith(card);
+          }, { once: true });
+        });
+
+        // Double-click or click handler on block to open in-place editor
+        wrapper.addEventListener('click', (e) => {
+          if (wrapper.classList.contains('editing')) return;
+          // Ignore clicks on links, checkboxes, or editable table cells
+          if (e.target.closest('a, input.task-checkbox, td[data-cell-editable="true"], button')) return;
+          openInlineBlockEditor(blk.index);
+        });
+
+        wrapper.appendChild(badge);
+        wrapper.appendChild(contentDiv);
+        fragment.appendChild(wrapper);
+      });
+
+      if (footnoteHtml) {
+        const fnDiv = document.createElement('div');
+        fnDiv.className = 'md-footnotes-wrap';
+        fnDiv.innerHTML = window.DOMPurify ? window.DOMPurify.sanitize(footnoteHtml) : footnoteHtml;
+        fragment.appendChild(fnDiv);
+      }
+
+      article.replaceChildren(fragment);
+
+      // Re-apply find highlights if search bar is open
+      if (state.findQuery.trim()) {
+        applyFindHighlights();
+      }
+    }
+
+    /**
+     * Enhances rendered HTML for a block:
+     * 1. Converts `[ ]` and `[x]` in list items into interactive checkboxes mapped to their exact line number.
+     * 2. Annotates table cells (`<td>`) with their exact source line and column index for direct cell editing.
+     */
+    function enhanceBlockHtml(openTok, startLine, endLine, allLines, blockHtml) {
+      const container = document.createElement('div');
+      container.innerHTML = blockHtml;
+
+      // 1. Interactive Task Checkboxes
+      const taskLineIndices = [];
+      for (let l = startLine; l < endLine; l++) {
+        if (/^\s*(?:[-*+]|\d+[.)])\s+\[[ xX]\]\s+/.test(allLines[l] || '')) {
+          taskLineIndices.push(l);
+        }
+      }
+
+      if (taskLineIndices.length > 0) {
+        let taskPtr = 0;
+        container.querySelectorAll('li').forEach(li => {
+          // Inspect first text node inside li or first p inside li
+          const targetContainer = li.firstElementChild && li.firstElementChild.tagName === 'P' ? li.firstElementChild : li;
+          const firstNode = targetContainer.firstChild;
+          if (firstNode && firstNode.nodeType === Node.TEXT_NODE) {
+            const m = firstNode.nodeValue.match(/^\s*\[([ xX])\]\s+/);
+            if (m && taskPtr < taskLineIndices.length) {
+              const lineNo = taskLineIndices[taskPtr++];
+              const isChecked = m[1].toLowerCase() === 'x';
+              firstNode.nodeValue = firstNode.nodeValue.replace(/^\s*\[([ xX])\]\s+/, '');
+              li.classList.add('task-list-item');
+              const checkbox = document.createElement('input');
+              checkbox.type = 'checkbox';
+              checkbox.className = 'task-checkbox';
+              checkbox.setAttribute('data-task-line', String(lineNo));
+              if (isChecked) checkbox.setAttribute('checked', 'checked');
+              targetContainer.insertBefore(checkbox, firstNode);
+            }
+          }
+        });
+      }
+
+      // 2. Annotate Table Cells for Direct Editing & Responsive Overflow
+      const table = container.querySelector('table');
+      if (table) {
+        // Source lines for table: header is startLine, separator is startLine+1, body rows start at startLine+2
+        const tbodyRows = table.querySelectorAll('tbody tr');
+        tbodyRows.forEach((tr, rowIdx) => {
+          const lineNo = startLine + 2 + rowIdx;
+          if (lineNo < endLine) {
+            tr.querySelectorAll('td').forEach((td, colIdx) => {
+              td.setAttribute('data-cell-editable', 'true');
+              td.setAttribute('data-table-line', String(lineNo));
+              td.setAttribute('data-table-col', String(colIdx));
+              td.setAttribute('title', 'Click to edit cell directly, or use L-badge to edit raw Markdown table');
+            });
+          }
+        });
+        const scrollWrap = document.createElement('div');
+        scrollWrap.className = 'table-scroll-wrap';
+        table.parentNode.insertBefore(scrollWrap, table);
+        scrollWrap.appendChild(table);
+      }
+
+      return container.innerHTML;
+    }
+
+    // --- In-Place Rendered Block Editing (Two-Way Sync) ---
+    function openInlineBlockEditor(blockIndex) {
+      const blk = parsedBlocksCache[blockIndex];
+      if (!blk) return;
+
+      // Close any existing open inline block editor first
+      const existingEditing = document.querySelector('.md-block.editing');
+      if (existingEditing) {
+        renderDocument();
+      }
+
+      const wrapper = document.querySelector(`.md-block[data-block-index="${blockIndex}"]`);
+      if (!wrapper) return;
+
+      state.activeBlockIndex = blockIndex;
+      const statActive = document.getElementById('statActiveBlock');
+      if (statActive) statActive.textContent = `Editing L${blk.startLine + 1}–${blk.endLine}`;
+
+      wrapper.classList.add('editing');
+      wrapper.innerHTML = `
+        <div class="inline-editor-header">
+          <span><strong>In-Place Block Editor</strong> · Source Lines ${blk.startLine + 1}–${blk.endLine} (${blk.type})</span>
+          <span>Preserves surrounding Markdown</span>
+        </div>
+        <textarea class="inline-editor-textarea" aria-label="Edit Markdown block"></textarea>
+        <div class="inline-editor-actions">
+          <span><kbd>Ctrl/Cmd + Enter</kbd> to save · <kbd>Esc</kbd> to cancel</span>
+          <div class="inline-editor-btns">
+            <button type="button" class="tool-btn" data-inline-action="cancel">Cancel</button>
+            <button type="button" class="tool-btn tool-btn-primary" data-inline-action="save">Apply Block</button>
+          </div>
+        </div>
+      `;
+
+      const textarea = wrapper.querySelector('.inline-editor-textarea');
+      textarea.value = blk.raw;
+      const lineCount = Math.max(3, splitLines(blk.raw).length + 1);
+      textarea.rows = Math.min(18, lineCount);
+      textarea.focus();
+
+      // Live two-way source sync as the user types in the rendered block editor, or commit on Apply/Blur
+      const commitBlockChange = () => {
+        const nextRaw = textarea.value;
+        if (nextRaw !== blk.raw) {
+          const updatedSource = spliceMarkdownBlock(state.sourceText, blk.startLine, blk.endLine, nextRaw);
+          applySourceChange(updatedSource, 'rendered-block-edit');
+        } else {
+          renderDocument();
+        }
+        state.activeBlockIndex = null;
+        if (statActive) statActive.textContent = 'Ready';
+      };
+
+      textarea.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+          e.preventDefault();
+          commitBlockChange();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          state.activeBlockIndex = null;
+          renderDocument();
+        }
+      });
+
+      wrapper.querySelector('[data-inline-action="save"]').addEventListener('click', (e) => {
+        e.stopPropagation();
+        commitBlockChange();
+      });
+
+      wrapper.querySelector('[data-inline-action="cancel"]').addEventListener('click', (e) => {
+        e.stopPropagation();
+        state.activeBlockIndex = null;
+        renderDocument();
+      });
+    }
+
+    // Delegate Checkbox Toggles & Table Cell Edits in Rendered View
+    document.getElementById('markdownRenderedArticle').addEventListener('change', (e) => {
+      const checkbox = e.target.closest('input.task-checkbox');
+      if (!checkbox) return;
+      const lineNo = parseInt(checkbox.getAttribute('data-task-line'), 10);
+      if (!isNaN(lineNo)) {
+        const nextSource = toggleTaskCheckboxOnLine(state.sourceText, lineNo);
+        applySourceChange(nextSource, 'task-toggle');
+        showToast(`Updated task on line ${lineNo + 1}`);
+      }
+    });
+
+    document.getElementById('markdownRenderedArticle').addEventListener('click', (e) => {
+      const cell = e.target.closest('td[data-cell-editable="true"]');
+      if (!cell || cell.querySelector('input')) return;
+      e.stopPropagation();
+
+      const lineNo = parseInt(cell.getAttribute('data-table-line'), 10);
+      const colNo = parseInt(cell.getAttribute('data-table-col'), 10);
+      if (isNaN(lineNo) || isNaN(colNo)) return;
+
+      const lines = splitLines(state.sourceText);
+      const rawLine = lines[lineNo] || '';
+      const core = rawLine.trim().replace(/^\|/, '').replace(/\|$/, '');
+      const cells = core.split(/(?<!\\)\|/);
+      const currentRawCell = (cells[colNo] || '').trim();
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.value = currentRawCell;
+      input.style.cssText = 'width:100%;padding:3px 6px;font-family:var(--font-code);font-size:12.5px;border:1px solid var(--accent);border-radius:3px;background:var(--surface);color:var(--ink);';
+      cell.innerHTML = '';
+      cell.appendChild(input);
+      input.focus();
+      input.select();
+
+      let committed = false;
+      const finishCell = (save) => {
+        if (committed) return;
+        committed = true;
+        if (save && input.value !== currentRawCell) {
+          const updated = updateTableCellOnLine(state.sourceText, lineNo, colNo, input.value);
+          applySourceChange(updated, 'table-cell-edit');
+        } else {
+          renderDocument();
+        }
+      };
+
+      input.addEventListener('keydown', (ke) => {
+        if (ke.key === 'Enter') {
+          ke.preventDefault();
+          finishCell(true);
+        } else if (ke.key === 'Escape') {
+          ke.preventDefault();
+          finishCell(false);
+        }
+      });
+      input.addEventListener('blur', () => finishCell(true));
+    });
+
+    // --- Unified Undo / Redo & Source Mutation Pipeline ---
+    function applySourceChange(nextText, origin = 'user', pushHistory = true) {
+      if (nextText === state.sourceText) return;
+
+      if (pushHistory) {
+        state.undoStack.push(state.sourceText);
+        if (state.undoStack.length > 100) state.undoStack.shift();
+        state.redoStack = [];
+      }
+
+      state.sourceText = nextText;
+      state.dirty = state.sourceText !== state.savedText;
+      updateDirtyIndicator();
+      updateUndoRedoButtons();
+
+      // Update Source Editor (CodeMirror 6 or Fallback Textarea) without losing cursor
+      if (origin !== 'source-editor') {
+        syncSourceEditorBuffer(nextText);
+      }
+
+      // Debounce rendering for very large documents (5,000+ lines) when typing in source
+      const lineCount = splitLines(nextText).length;
+      if (origin === 'source-editor' && lineCount > 1200) {
+        clearTimeout(renderDebounceTimer);
+        renderDebounceTimer = setTimeout(() => renderDocument(), 110);
+      } else {
+        renderDocument();
+      }
+
+      // Schedule localStorage working copy autosave
+      clearTimeout(autosaveTimer);
+      autosaveTimer = setTimeout(() => {
+        try {
+          localStorage.setItem(STORAGE_KEYS.AUTOSAVE_DOC, state.sourceText);
+          localStorage.setItem(STORAGE_KEYS.AUTOSAVE_META, JSON.stringify({
+            filename: state.filename,
+            timestamp: Date.now()
+          }));
+        } catch (_) {}
+      }, 250);
+    }
+
+    function performUndo() {
+      if (state.undoStack.length === 0) return;
+      const prev = state.undoStack.pop();
+      state.redoStack.push(state.sourceText);
+      applySourceChange(prev, 'undo-redo', false);
+      showToast('Undo');
+    }
+
+    function performRedo() {
+      if (state.redoStack.length === 0) return;
+      const next = state.redoStack.pop();
+      state.undoStack.push(state.sourceText);
+      applySourceChange(next, 'undo-redo', false);
+      showToast('Redo');
+    }
+
+    function updateUndoRedoButtons() {
+      const btnUndo = document.getElementById('btnUndo');
+      const btnRedo = document.getElementById('btnRedo');
+      if (btnUndo) btnUndo.disabled = state.undoStack.length === 0;
+      if (btnRedo) btnRedo.disabled = state.redoStack.length === 0;
+    }
+
+    function updateDirtyIndicator() {
+      const ind = document.getElementById('unsavedIndicator');
+      const txt = document.getElementById('unsavedText');
+      if (!ind || !txt) return;
+      ind.classList.toggle('dirty', state.dirty);
+      txt.textContent = state.dirty ? 'Unsaved changes' : 'Saved';
+    }
+
+    // --- Status Bar Metrics ---
+    function updateStatusBar(text) {
+      const trimmed = text.trim();
+      const lines = text ? splitLines(text).length : 1;
+      const chars = text.length;
+      let words = 0;
+      if (trimmed) {
+        const stripped = trimmed.replace(/```[\s\S]*?```/g, ' ').replace(/[#*_`~>\[\]()!|-]/g, ' ');
+        words = stripped.trim().split(/\s+/).filter(Boolean).length;
+      }
+      const readMin = words === 0 ? 0 : Math.max(1, Math.ceil(words / 220));
+
+      document.getElementById('statWords').textContent = `${words.toLocaleString()} words`;
+      document.getElementById('statChars').textContent = `${chars.toLocaleString()} chars`;
+      document.getElementById('statLines').textContent = `${lines.toLocaleString()} lines`;
+      document.getElementById('statReadingTime').textContent = `${readMin} min read`;
+      document.getElementById('statLineEnding').textContent = text.includes('\r\n') ? 'CRLF' : 'LF';
+    }
+
+    // --- Outline Sidebar & Scroll-Spy ---
+    function renderOutlineSidebar(headings) {
+      const list = document.getElementById('tocList');
+      if (!list) return;
+      if (headings.length === 0) {
+        list.innerHTML = `<li style="padding:8px;color:var(--muted);font-size:12px;">No headings in document</li>`;
+        return;
+      }
+      list.innerHTML = headings.map((h, i) => `
+        <li>
+          <button type="button" class="toc-item-btn toc-lvl-${Math.min(6, h.level)} ${i === 0 ? 'active' : ''}" data-heading-id="${h.id}" data-heading-line="${h.startLine}">
+            ${h.title || 'Untitled Section'}
+          </button>
+        </li>
+      `).join('');
+
+      list.querySelectorAll('.toc-item-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-heading-id');
+          const line = parseInt(btn.getAttribute('data-heading-line'), 10) || 0;
+          const targetEl = document.getElementById(id);
+          if (targetEl) {
+            targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+          scrollSourceToLine(line);
+        });
+      });
+    }
+
+    // --- Find in Document ---
+    function applyFindHighlights() {
+      const query = state.findQuery.trim();
+      const countEl = document.getElementById('findCount');
+      const article = document.getElementById('markdownRenderedArticle');
+      if (!article) return;
+
+      // Clear previous marks by re-rendering clean blocks if query cleared
+      if (!query) {
+        state.findMatches = [];
+        state.findCurrentIndex = 0;
+        if (countEl) countEl.textContent = '0 / 0';
+        return;
+      }
+
+      const walker = document.createTreeWalker(article, NodeFilter.SHOW_TEXT, {
+        acceptNode(node) {
+          if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+          if (node.parentElement && node.parentElement.closest('script, style, .md-block-badge, .inline-editor-textarea')) {
+            return NodeFilter.FILTER_REJECT;
+          }
+          return NodeFilter.FILTER_ACCEPT;
+        }
+      });
+
+      const textNodes = [];
+      while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+      const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`(${escaped})`, 'gi');
+      const marks = [];
+
+      textNodes.forEach(node => {
+        if (!regex.test(node.nodeValue)) return;
+        regex.lastIndex = 0;
+        const frag = document.createDocumentFragment();
+        let lastIdx = 0;
+        let match;
+        while ((match = regex.exec(node.nodeValue)) !== null) {
+          if (match.index > lastIdx) {
+            frag.appendChild(document.createTextNode(node.nodeValue.slice(lastIdx, match.index)));
+          }
+          const mark = document.createElement('mark');
+          mark.className = 'find-highlight';
+          mark.textContent = match[0];
+          frag.appendChild(mark);
+          marks.push(mark);
+          lastIdx = regex.lastIndex;
+        }
+        if (lastIdx < node.nodeValue.length) {
+          frag.appendChild(document.createTextNode(node.nodeValue.slice(lastIdx)));
+        }
+        node.parentNode.replaceChild(frag, node);
+      });
+
+      state.findMatches = marks;
+      if (marks.length === 0) {
+        state.findCurrentIndex = 0;
+        if (countEl) countEl.textContent = '0 / 0';
+      } else {
+        if (state.findCurrentIndex >= marks.length) state.findCurrentIndex = 0;
+        highlightCurrentMatch();
+      }
+    }
+
+    function highlightCurrentMatch() {
+      const marks = state.findMatches;
+      const countEl = document.getElementById('findCount');
+      if (!marks.length) return;
+      marks.forEach((m, i) => m.classList.toggle('current', i === state.findCurrentIndex));
+      const active = marks[state.findCurrentIndex];
+      if (active) {
+        active.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      if (countEl) countEl.textContent = `${state.findCurrentIndex + 1} / ${marks.length}`;
+    }
+
+    // --- Source Editor Setup (CodeMirror 6 with Instant Fallback) ---
+    const fallbackTextarea = document.getElementById('fallbackSourceTextarea');
+    const fallbackGutter = document.getElementById('fallbackGutter');
+
+    function updateFallbackGutter(text) {
+      if (!fallbackGutter) return;
+      const count = splitLines(text).length;
+      // Avoid building massive DOM string on every keystroke if unchanged
+      if (fallbackGutter._lastCount === count) return;
+      fallbackGutter._lastCount = count;
+      const nums = [];
+      for (let i = 1; i <= count; i++) nums.push(i);
+      fallbackGutter.textContent = nums.join('\n');
+    }
+
+    if (fallbackTextarea) {
+      fallbackTextarea.value = state.sourceText;
+      updateFallbackGutter(state.sourceText);
+
+      fallbackTextarea.addEventListener('input', () => {
+        if (isUpdatingEditorProgrammatically) return;
+        updateFallbackGutter(fallbackTextarea.value);
+        applySourceChange(fallbackTextarea.value, 'source-editor');
+      });
+
+      fallbackTextarea.addEventListener('scroll', () => {
+        if (fallbackGutter) fallbackGutter.scrollTop = fallbackTextarea.scrollTop;
+        handleSourceScrollSync(fallbackTextarea);
+      });
+    }
+
+    function syncSourceEditorBuffer(newText) {
+      isUpdatingEditorProgrammatically = true;
+      try {
+        if (cmView) {
+          const currentDoc = cmView.state.doc.toString();
+          if (currentDoc !== newText) {
+            const cursorOffset = Math.min(cmView.state.selection.main.head, newText.length);
+            cmView.dispatch({
+              changes: { from: 0, to: currentDoc.length, insert: newText },
+              selection: { anchor: cursorOffset }
+            });
+          }
+        }
+        if (fallbackTextarea && fallbackTextarea.value !== newText) {
+          const start = fallbackTextarea.selectionStart;
+          const end = fallbackTextarea.selectionEnd;
+          fallbackTextarea.value = newText;
+          updateFallbackGutter(newText);
+          fallbackTextarea.setSelectionRange(Math.min(start, newText.length), Math.min(end, newText.length));
+        }
+      } finally {
+        isUpdatingEditorProgrammatically = false;
+      }
+    }
+
+    function scrollSourceToLine(lineNumber) {
+      const totalLines = Math.max(1, splitLines(state.sourceText).length);
+      const ratio = Math.max(0, Math.min(1, lineNumber / totalLines));
+      if (cmView) {
+        const scroller = cmView.scrollDOM;
+        scroller.scrollTop = ratio * (scroller.scrollHeight - scroller.clientHeight);
+      } else if (fallbackTextarea) {
+        fallbackTextarea.scrollTop = ratio * (fallbackTextarea.scrollHeight - fallbackTextarea.clientHeight);
+      }
+    }
+
+    // Dynamically load CodeMirror 6 via esm.sh
+    async function initCodeMirror6() {
+      try {
+        const [
+          { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter },
+          { EditorState },
+          { defaultKeymap, history, historyKeymap },
+          { markdown },
+          { syntaxHighlighting, defaultHighlightStyle }
+        ] = await Promise.all([
+          import('https://esm.sh/@codemirror/view@6.26.3'),
+          import('https://esm.sh/@codemirror/state@6.4.1'),
+          import('https://esm.sh/@codemirror/commands@6.5.0'),
+          import('https://esm.sh/@codemirror/lang-markdown@6.2.5'),
+          import('https://esm.sh/@codemirror/language@6.10.1')
+        ]);
+
+        const mount = document.getElementById('cmEditorMount');
+        const fallbackWrap = document.getElementById('fallbackEditorWrap');
+
+        const updateListener = EditorView.updateListener.of((update) => {
+          if (update.docChanged && !isUpdatingEditorProgrammatically) {
+            const text = update.state.doc.toString();
+            applySourceChange(text, 'source-editor');
+          }
+        });
+
+        const stateCM = EditorState.create({
+          doc: state.sourceText,
+          extensions: [
+            lineNumbers(),
+            highlightActiveLine(),
+            highlightActiveLineGutter(),
+            history(),
+            EditorView.lineWrapping,
+            markdown(),
+            syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+            keymap.of([...defaultKeymap, ...historyKeymap]),
+            updateListener
+          ]
+        });
+
+        cmView = new EditorView({
+          state: stateCM,
+          parent: mount
+        });
+
+        if (fallbackWrap) fallbackWrap.style.display = 'none';
+        const engineLbl = document.getElementById('editorEngineLabel');
+        if (engineLbl) engineLbl.textContent = 'CodeMirror 6 Ready';
+
+        cmView.scrollDOM.addEventListener('scroll', () => {
+          handleSourceScrollSync(cmView.scrollDOM);
+        });
+      } catch (_) {
+        // Fallback synchronized editor remains active if offline
+        const engineLbl = document.getElementById('editorEngineLabel');
+        if (engineLbl) engineLbl.textContent = 'Native Source Buffer';
+      }
+    }
+
+    // --- Proportional Line-Mapped Scroll Sync & Outline Scroll-Spy ---
+    const renderedScroller = document.getElementById('renderedScrollContainer');
+
+    function handleSourceScrollSync(sourceScrollEl) {
+      if (state.settings.viewMode !== 'split' || isSyncingScroll) return;
+      isSyncingScroll = true;
+      const maxScroll = sourceScrollEl.scrollHeight - sourceScrollEl.clientHeight;
+      const ratio = maxScroll > 0 ? sourceScrollEl.scrollTop / maxScroll : 0;
+      const targetMax = renderedScroller.scrollHeight - renderedScroller.clientHeight;
+      renderedScroller.scrollTop = ratio * targetMax;
+      setTimeout(() => { isSyncingScroll = false; }, 40);
+    }
+
+    if (renderedScroller) {
+      renderedScroller.addEventListener('scroll', () => {
+        // 1. Update Scroll-Spy active heading in Outline
+        const scrollTop = renderedScroller.scrollTop;
+        let currentHeadingId = parsedHeadingsCache[0]?.id || null;
+        for (const h of parsedHeadingsCache) {
+          const el = document.getElementById(h.id);
+          if (el && el.offsetTop - 90 <= scrollTop) {
+            currentHeadingId = h.id;
+          }
+        }
+        if (currentHeadingId) {
+          document.querySelectorAll('.toc-item-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.getAttribute('data-heading-id') === currentHeadingId);
+          });
+        }
+
+        // 2. Sync Source Pane Scroll in Split Mode
+        if (state.settings.viewMode !== 'split' || isSyncingScroll) return;
+        isSyncingScroll = true;
+        const maxScroll = renderedScroller.scrollHeight - renderedScroller.clientHeight;
+        const ratio = maxScroll > 0 ? scrollTop / maxScroll : 0;
+        const sourceTarget = cmView ? cmView.scrollDOM : fallbackTextarea;
+        if (sourceTarget) {
+          const sMax = sourceTarget.scrollHeight - sourceTarget.clientHeight;
+          sourceTarget.scrollTop = ratio * sMax;
+        }
+        setTimeout(() => { isSyncingScroll = false; }, 40);
+      });
+    }
+
+    // --- File Operations (Open, Save, New, Recent Files, Drag-and-Drop) ---
+    function loadRecentFilesList() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEYS.RECENT_FILES);
+        return raw ? JSON.parse(raw) : [];
+      } catch (_) {
+        return [];
+      }
+    }
+
+    function saveRecentFileEntry(name, content) {
+      try {
+        const list = loadRecentFilesList().filter(f => f.name !== name);
+        list.unshift({
+          name,
+          timestamp: Date.now(),
+          content: content.slice(0, 150000)
+        });
+        localStorage.setItem(STORAGE_KEYS.RECENT_FILES, JSON.stringify(list.slice(0, 6)));
+      } catch (_) {}
+      renderRecentFilesUI();
+    }
+
+    function renderRecentFilesUI() {
+      const container = document.getElementById('recentFilesList');
+      if (!container) return;
+      const list = loadRecentFilesList();
+      if (list.length === 0) {
+        container.innerHTML = `<div style="padding:6px 8px;color:var(--muted);font-size:12px;">No recent local files yet</div>`;
+        return;
+      }
+      container.innerHTML = list.map((item, idx) => {
+        const mins = Math.max(1, Math.floor((Date.now() - item.timestamp) / 60000));
+        const timeStr = mins < 60 ? `${mins}m ago` : `${Math.floor(mins / 60)}h ago`;
+        return `
+          <button type="button" class="recent-file-item" data-recent-idx="${idx}">
+            <span class="recent-file-name">${item.name}</span>
+            <span class="recent-file-meta">Opened ${timeStr}</span>
+          </button>
+        `;
+      }).join('');
+
+      container.querySelectorAll('[data-recent-idx]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = parseInt(btn.getAttribute('data-recent-idx'), 10);
+          const entry = list[idx];
+          if (entry) {
+            loadDocumentIntoWorkspace(entry.name, entry.content || '', null);
+            showToast(`Loaded ${entry.name}`);
+          }
+        });
+      });
+    }
+
+    function loadDocumentIntoWorkspace(name, content, handle = null) {
+      state.filename = name || 'untitled.md';
+      state.fileHandle = handle;
+      state.savedText = content;
+      state.undoStack = [];
+      state.redoStack = [];
+      const fnInput = document.getElementById('docFilenameInput');
+      if (fnInput) fnInput.value = state.filename;
+      applySourceChange(content, 'file-load', false);
+      state.dirty = false;
+      updateDirtyIndicator();
+      updateUndoRedoButtons();
+      saveRecentFileEntry(state.filename, content);
+    }
+
+    async function triggerOpenFile() {
+      if ('showOpenFilePicker' in window) {
+        try {
+          const [handle] = await window.showOpenFilePicker({
+            types: [{
+              description: 'Markdown & Text Files',
+              accept: {
+                'text/markdown': ['.md', '.markdown', '.mdown'],
+                'text/plain': ['.txt']
+              }
+            }],
+            multiple: false
+          });
+          const file = await handle.getFile();
+          const text = await file.text();
+          loadDocumentIntoWorkspace(file.name, text, handle);
+          showToast(`Opened ${file.name}`);
+          return;
+        } catch (err) {
+          if (err && err.name === 'AbortError') return;
+        }
+      }
+      const input = document.getElementById('fileInputFallback');
+      if (input) {
+        input.value = '';
+        input.click();
+      }
+    }
+
+    document.getElementById('fileInputFallback').addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const text = await file.text();
+      loadDocumentIntoWorkspace(file.name, text, null);
+      showToast(`Opened ${file.name}`);
+    });
+
+    async function triggerSaveFile() {
+      const nameInput = document.getElementById('docFilenameInput');
+      const filename = (nameInput && nameInput.value.trim()) || state.filename || 'document.md';
+      state.filename = filename;
+
+      // 1. Write in-place if FileSystemFileHandle is present
+      if (state.fileHandle && typeof state.fileHandle.createWritable === 'function') {
+        try {
+          const writable = await state.fileHandle.createWritable();
+          await writable.write(state.sourceText);
+          await writable.close();
+          state.savedText = state.sourceText;
+          state.dirty = false;
+          updateDirtyIndicator();
+          saveRecentFileEntry(filename, state.sourceText);
+          showToast(`Saved changes to ${filename}`);
+          return;
+        } catch (err) {
+          if (err && err.name === 'AbortError') return;
+        }
+      }
+
+      // 2. Try showSaveFilePicker if supported and allowed
+      if ('showSaveFilePicker' in window) {
+        try {
+          const handle = await window.showSaveFilePicker({
+            suggestedName: filename,
+            types: [{
+              description: 'Markdown File',
+              accept: { 'text/markdown': ['.md', '.markdown'] }
+            }]
+          });
+          const writable = await handle.createWritable();
+          await writable.write(state.sourceText);
+          await writable.close();
+          state.fileHandle = handle;
+          state.savedText = state.sourceText;
+          state.dirty = false;
+          updateDirtyIndicator();
+          saveRecentFileEntry(handle.name || filename, state.sourceText);
+          showToast(`Saved ${handle.name || filename}`);
+          return;
+        } catch (err) {
+          if (err && err.name === 'AbortError') return;
+        }
+      }
+
+      // 3. Universal Download Fallback
+      const blob = new Blob([state.sourceText], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+
+      state.savedText = state.sourceText;
+      state.dirty = false;
+      updateDirtyIndicator();
+      saveRecentFileEntry(filename, state.sourceText);
+      showToast(`Downloaded ${filename}`);
+    }
+
+    // Drag and Drop onto Window
+    const dropOverlay = document.getElementById('dropOverlay');
+    let dragCounter = 0;
+
+    window.addEventListener('dragenter', (e) => {
+      if (e.dataTransfer && Array.from(e.dataTransfer.types).includes('Files')) {
+        e.preventDefault();
+        dragCounter++;
+        dropOverlay.classList.add('active');
+      }
+    });
+
+    window.addEventListener('dragover', (e) => {
+      if (e.dataTransfer && Array.from(e.dataTransfer.types).includes('Files')) {
+        e.preventDefault();
+      }
+    });
+
+    window.addEventListener('dragleave', () => {
+      dragCounter = Math.max(0, dragCounter - 1);
+      if (dragCounter === 0) dropOverlay.classList.remove('active');
+    });
+
+    window.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      dragCounter = 0;
+      dropOverlay.classList.remove('active');
+      const items = e.dataTransfer && e.dataTransfer.items;
+      if (items && items[0] && typeof items[0].getAsFileSystemHandle === 'function') {
+        try {
+          const handle = await items[0].getAsFileSystemHandle();
+          if (handle && handle.kind === 'file') {
+            const file = await handle.getFile();
+            const text = await file.text();
+            loadDocumentIntoWorkspace(file.name, text, handle);
+            showToast(`Opened ${file.name}`);
+            return;
+          }
+        } catch (_) {}
+      }
+      const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (file) {
+        const text = await file.text();
+        loadDocumentIntoWorkspace(file.name, text, null);
+        showToast(`Opened ${file.name}`);
+      }
+    });
+
+    // --- UI Event Listeners ---
+    document.getElementById('btnOpenFile').addEventListener('click', triggerOpenFile);
+    document.getElementById('btnSaveFile').addEventListener('click', triggerSaveFile);
+    document.getElementById('btnNewFile').addEventListener('click', () => {
+      loadDocumentIntoWorkspace('untitled.md', '', null);
+      showToast('Created blank document');
+    });
+
+    document.getElementById('docFilenameInput').addEventListener('change', (e) => {
+      state.filename = e.target.value.trim() || 'untitled.md';
+    });
+
+    // View Mode Switching
+    function setViewMode(mode) {
+      state.settings.viewMode = mode;
+      applySettings();
+    }
+
+    document.getElementById('btnModeRead').addEventListener('click', () => setViewMode('read'));
+    document.getElementById('btnModeSplit').addEventListener('click', () => setViewMode('split'));
+    document.getElementById('btnModeSource').addEventListener('click', () => setViewMode('source'));
+
+    // Sidebar Tabs & Toggle
+    document.getElementById('btnToggleOutline').addEventListener('click', () => {
+      state.settings.outlineOpen = !state.settings.outlineOpen;
+      applySettings();
+    });
+
+    document.getElementById('tabBtnOutline').addEventListener('click', () => {
+      document.getElementById('tabBtnOutline').classList.add('active');
+      document.getElementById('tabBtnFiles').classList.remove('active');
+      document.getElementById('panelOutline').classList.add('active');
+      document.getElementById('panelFiles').classList.remove('active');
+    });
+
+    document.getElementById('tabBtnFiles').addEventListener('click', () => {
+      document.getElementById('tabBtnFiles').classList.add('active');
+      document.getElementById('tabBtnOutline').classList.remove('active');
+      document.getElementById('panelFiles').classList.add('active');
+      document.getElementById('panelOutline').classList.remove('active');
+      renderRecentFilesUI();
+    });
+
+    // Built-in Sample & Stress-Test Fixtures
+    document.getElementById('btnLoadSampleDefault').addEventListener('click', () => {
+      loadDocumentIntoWorkspace('editorial-guide.md', DEFAULT_DOCUMENT, null);
+      showToast('Loaded Editorial Guide');
+    });
+
+    document.getElementById('btnLoadSampleTagalog').addEventListener('click', () => {
+      loadDocumentIntoWorkspace('tipograpiya-pilipinas.md', SAMPLE_TAGALOG, null);
+      showToast('Loaded Filipino / Tagalog sample');
+    });
+
+    document.getElementById('btnLoadSampleEdge').addEventListener('click', () => {
+      loadDocumentIntoWorkspace('edge-cases-torture.md', SAMPLE_EDGE_CASES, null);
+      showToast('Loaded Edge Cases fixture');
+    });
+
+    document.getElementById('btnLoadSampleLarge').addEventListener('click', () => {
+      const largeDoc = generateLargeBenchmarkDoc();
+      loadDocumentIntoWorkspace('benchmark-5200-lines.md', largeDoc, null);
+      showToast('Generated 5,200+ line CRLF benchmark');
+    });
+
+    // Undo / Redo Buttons
+    document.getElementById('btnUndo').addEventListener('click', performUndo);
+    document.getElementById('btnRedo').addEventListener('click', performRedo);
+
+    // Line Numbers Checkbox
+    document.getElementById('chkLineNumbers').addEventListener('change', (e) => {
+      state.settings.showLineNumbers = e.target.checked;
+      applySettings();
+    });
+
+    // Find Bar Controls
+    const findBar = document.getElementById('findBar');
+    const findInput = document.getElementById('findInput');
+
+    function toggleFindBar(forceState) {
+      const nextOpen = typeof forceState === 'boolean' ? forceState : !findBar.classList.contains('open');
+      findBar.classList.toggle('open', nextOpen);
+      if (nextOpen) {
+        findInput.focus();
+        findInput.select();
+        if (findInput.value.trim()) {
+          state.findQuery = findInput.value;
+          renderDocument();
+        }
+      } else {
+        state.findQuery = '';
+        renderDocument();
+      }
+    }
+
+    document.getElementById('btnToggleFind').addEventListener('click', () => toggleFindBar());
+    document.getElementById('btnCloseFind').addEventListener('click', () => toggleFindBar(false));
+
+    findInput.addEventListener('input', () => {
+      state.findQuery = findInput.value;
+      state.findCurrentIndex = 0;
+      renderDocument();
+    });
+
+    findInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (!state.findMatches.length) return;
+        if (e.shiftKey) {
+          state.findCurrentIndex = (state.findCurrentIndex - 1 + state.findMatches.length) % state.findMatches.length;
+        } else {
+          state.findCurrentIndex = (state.findCurrentIndex + 1) % state.findMatches.length;
+        }
+        highlightCurrentMatch();
+      } else if (e.key === 'Escape') {
+        toggleFindBar(false);
+      }
+    });
+
+    document.getElementById('btnFindNext').addEventListener('click', () => {
+      if (!state.findMatches.length) return;
+      state.findCurrentIndex = (state.findCurrentIndex + 1) % state.findMatches.length;
+      highlightCurrentMatch();
+    });
+
+    document.getElementById('btnFindPrev').addEventListener('click', () => {
+      if (!state.findMatches.length) return;
+      state.findCurrentIndex = (state.findCurrentIndex - 1 + state.findMatches.length) % state.findMatches.length;
+      highlightCurrentMatch();
+    });
+
+    // Focus / Zen Mode
+    function toggleZenMode(force) {
+      state.zenMode = typeof force === 'boolean' ? force : !state.zenMode;
+      document.getElementById('appShell').classList.toggle('zen-mode', state.zenMode);
+      if (state.zenMode) showToast('Focus Mode enabled — Press Esc to exit');
+    }
+
+    document.getElementById('btnToggleZen').addEventListener('click', () => toggleZenMode());
+    document.getElementById('btnExitZen').addEventListener('click', () => toggleZenMode(false));
+
+    // Export Menu Actions
+    const exportDropdown = document.getElementById('exportDropdown');
+    document.getElementById('btnExportMenu').addEventListener('click', (e) => {
+      e.stopPropagation();
+      exportDropdown.classList.toggle('open');
+    });
+
+    document.addEventListener('click', () => {
+      exportDropdown.classList.remove('open');
+    });
+
+    document.getElementById('btnCopyHtml').addEventListener('click', async () => {
+      const cleanHtml = window.DOMPurify
+        ? window.DOMPurify.sanitize(renderMathInHtml(md.render(state.sourceText)))
+        : md.render(state.sourceText);
+      try {
+        await navigator.clipboard.writeText(cleanHtml);
+        showToast('Copied rendered HTML to clipboard');
+      } catch (_) {
+        const temp = document.createElement('textarea');
+        temp.value = cleanHtml;
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand('copy');
+        document.body.removeChild(temp);
+        showToast('Copied rendered HTML to clipboard');
+      }
+    });
+
+    document.getElementById('btnDownloadHtml').addEventListener('click', () => {
+      const cleanHtml = window.DOMPurify
+        ? window.DOMPurify.sanitize(renderMathInHtml(md.render(state.sourceText)))
+        : md.render(state.sourceText);
+      const standaloneHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>${state.filename.replace(/\.[^.]+$/, '')}</title>
+<style>
+  body {
+    max-width: ${MEASURE_PRESETS[state.settings.measure] || '68ch'};
+    margin: 48px auto;
+    padding: 0 20px;
+    font-family: ${FONT_OPTIONS.body[state.settings.fontBody] || 'Georgia, serif'};
+    font-size: ${state.settings.fontSize}px;
+    line-height: ${state.settings.lineHeight};
+    color: #1C1917;
+    background: #FAF7F2;
+  }
+  h1, h2, h3, h4 { font-family: ${FONT_OPTIONS.heading[state.settings.fontHeading] || 'Georgia, serif'}; font-weight: 400; }
+  pre, code { font-family: ${FONT_OPTIONS.code[state.settings.fontCode] || 'monospace'}; background: #F3EFE6; border-radius: 4px; }
+  pre { padding: 14px; overflow-x: auto; }
+  blockquote { border-left: 3px solid ${state.settings.accent}; padding-left: 16px; font-style: italic; }
+  table { width: 100%; border-collapse: collapse; margin: 1em 0; }
+  th, td { border: 1px solid #D0C7B0; padding: 8px 12px; }
+</style>
+</head>
+<body>
+${cleanHtml}
+</body>
+</html>`;
+      const blob = new Blob([standaloneHtml], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = state.filename.replace(/\.[^.]+$/, '') + '.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+      showToast('Downloaded standalone HTML file');
+    });
+
+    document.getElementById('btnPrintPdf').addEventListener('click', () => {
+      window.print();
+    });
+
+    // Settings Drawer Controls
+    const settingsBackdrop = document.getElementById('settingsBackdrop');
+    document.getElementById('btnOpenSettings').addEventListener('click', () => {
+      settingsBackdrop.classList.add('open');
+    });
+    document.getElementById('btnCloseSettings').addEventListener('click', () => {
+      settingsBackdrop.classList.remove('open');
+    });
+    settingsBackdrop.addEventListener('click', (e) => {
+      if (e.target === settingsBackdrop) settingsBackdrop.classList.remove('open');
+    });
+
+    document.querySelectorAll('[data-theme-val]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.settings.theme = btn.getAttribute('data-theme-val');
+        applySettings();
+      });
+    });
+
+    document.querySelectorAll('[data-measure-val]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.settings.measure = btn.getAttribute('data-measure-val');
+        applySettings();
+      });
+    });
+
+    document.querySelectorAll('.accent-swatch').forEach(sw => {
+      sw.addEventListener('click', () => {
+        state.settings.accent = sw.getAttribute('data-accent-hex');
+        applySettings();
+      });
+    });
+
+    document.getElementById('inputCustomAccent').addEventListener('input', (e) => {
+      state.settings.accent = e.target.value;
+      applySettings();
+    });
+
+    document.getElementById('selectFontBody').addEventListener('change', (e) => {
+      state.settings.fontBody = e.target.value;
+      applySettings();
+    });
+
+    document.getElementById('selectFontHeading').addEventListener('change', (e) => {
+      state.settings.fontHeading = e.target.value;
+      applySettings();
+    });
+
+    document.getElementById('selectFontCode').addEventListener('change', (e) => {
+      state.settings.fontCode = e.target.value;
+      applySettings();
+    });
+
+    document.getElementById('rangeFontSize').addEventListener('input', (e) => {
+      state.settings.fontSize = parseInt(e.target.value, 10);
+      applySettings();
+    });
+
+    document.getElementById('rangeLineHeight').addEventListener('input', (e) => {
+      state.settings.lineHeight = parseFloat(e.target.value);
+      applySettings();
+    });
+
+    document.getElementById('rangeParaSpacing').addEventListener('input', (e) => {
+      state.settings.paraSpacing = parseFloat(e.target.value);
+      applySettings();
+    });
+
+    document.getElementById('btnResetSettings').addEventListener('click', () => {
+      state.settings = getDefaultSettings();
+      applySettings();
+      showToast('Appearance reset to defaults');
+    });
+
+    // Shortcuts Modal
+    const shortcutsModal = document.getElementById('shortcutsModal');
+    document.getElementById('btnOpenShortcuts').addEventListener('click', () => {
+      shortcutsModal.classList.add('open');
+    });
+    document.getElementById('btnCloseShortcuts').addEventListener('click', () => {
+      shortcutsModal.classList.remove('open');
+    });
+    shortcutsModal.addEventListener('click', (e) => {
+      if (e.target === shortcutsModal) shortcutsModal.classList.remove('open');
+    });
+
+    // Global Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+      const mod = e.metaKey || e.ctrlKey;
+      const key = e.key.toLowerCase();
+
+      if (mod && key === 'o' && !e.shiftKey) {
+        e.preventDefault();
+        triggerOpenFile();
+      } else if (mod && key === 'o' && e.shiftKey) {
+        e.preventDefault();
+        state.settings.outlineOpen = !state.settings.outlineOpen;
+        applySettings();
+      } else if (mod && key === 's') {
+        e.preventDefault();
+        triggerSaveFile();
+      } else if (mod && key === '1') {
+        e.preventDefault();
+        setViewMode('read');
+      } else if (mod && key === '2') {
+        e.preventDefault();
+        setViewMode('split');
+      } else if (mod && key === '3') {
+        e.preventDefault();
+        setViewMode('source');
+      } else if (mod && key === ',') {
+        e.preventDefault();
+        settingsBackdrop.classList.toggle('open');
+      } else if (mod && key === 'f') {
+        e.preventDefault();
+        toggleFindBar(true);
+      } else if (mod && e.key === '\\') {
+        e.preventDefault();
+        toggleZenMode();
+      } else if (mod && key === 'z' && !e.target.closest('.cm-editor')) {
+        e.preventDefault();
+        if (e.shiftKey) performRedo();
+        else performUndo();
+      } else if (mod && key === 'y' && !e.target.closest('.cm-editor')) {
+        e.preventDefault();
+        performRedo();
+      } else if (e.key === '?' && !e.target.closest('input, textarea, .cm-editor')) {
+        e.preventDefault();
+        shortcutsModal.classList.toggle('open');
+      } else if (e.key === 'Escape') {
+        if (state.zenMode) toggleZenMode(false);
+        if (settingsBackdrop.classList.contains('open')) settingsBackdrop.classList.remove('open');
+        if (shortcutsModal.classList.contains('open')) shortcutsModal.classList.remove('open');
+        if (findBar.classList.contains('open')) toggleFindBar(false);
+      }
+    });
+
+    // Responsive Auto-Collapse of Split Mode on Phone Screens
+    window.addEventListener('resize', () => {
+      if (window.innerWidth <= 768 && state.settings.viewMode === 'split') {
+        setViewMode('read');
+      }
+    });
+
+    // --- Boot Application & Restore Working Copy if Present ---
+    function initApp() {
+      applySettings();
+      try {
+        const savedDoc = localStorage.getItem(STORAGE_KEYS.AUTOSAVE_DOC);
+        const savedMetaRaw = localStorage.getItem(STORAGE_KEYS.AUTOSAVE_META);
+        if (savedDoc !== null && savedDoc.length > 0) {
+          const meta = savedMetaRaw ? JSON.parse(savedMetaRaw) : {};
+          state.filename = meta.filename || 'editorial-guide.md';
+          state.sourceText = savedDoc;
+          state.savedText = savedDoc;
+          document.getElementById('docFilenameInput').value = state.filename;
+          if (fallbackTextarea) {
+            fallbackTextarea.value = savedDoc;
+            updateFallbackGutter(savedDoc);
+          }
+        }
+      } catch (_) {}
+
+      renderDocument();
+      renderRecentFilesUI();
+      initCodeMirror6();
+    }
+
+    initApp();
+  </script>
+</body>
+</html>
