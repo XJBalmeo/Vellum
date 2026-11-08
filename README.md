@@ -1,8 +1,8 @@
 # Vellum — Editorial Markdown Viewer & Two-Way Editor
 
-[](https://opensource.org/licenses/MIT)
-[](https://vitejs.dev/)
-[](#privacy--security)
+[![License: MIT](https://img.shields.io/badge/License-MIT-B84A27.svg)](https://opensource.org/licenses/MIT)
+[![Stack: Vite + Vanilla JS](https://img.shields.io/badge/Stack-Vite%20%2B%20CodeMirror%206-1C1917.svg)](https://vitejs.dev/)
+[![Privacy: 100% Client-Side](https://img.shields.io/badge/Privacy-100%25%20Client--Side-2A6F4E.svg)](#privacy--security)
 
 **Vellum** is a modern, client-side Markdown reader and two-way synchronized editor built around book-grade typography and surgical source fidelity. Open any `.md`, `.markdown`, or `.txt` file to read it in a richly typeset editorial view, and edit seamlessly in **either** the raw Markdown source or directly inside the rendered document—without mangling your surrounding formatting.
 
