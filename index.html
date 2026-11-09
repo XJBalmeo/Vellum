@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vellum — Editorial Markdown Viewer & Two-Way Editor</title>
+    <title>Vellum — Editorial Markdown Viewer & Two-Way Editor</title>
+  <link id="appFavicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231C1917'/%3E%3Cpath d='M8.5 8h4.2l3.8 11.2L20.3 8h3.7l-6.2 16.5h-3.6L8.5 8z' fill='%23FAF7F2'/%3E%3Crect x='22.5' y='20.5' width='4' height='4' rx='1' fill='%23B84A27'/%3E%3C/svg%3E" />
 
   <!-- Curated Editorial Google Fonts: Instrument Serif, Newsreader, Lora, Fraunces, Plus Jakarta Sans, JetBrains Mono, Fira Code, IBM Plex Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -1619,6 +1620,74 @@
       color: var(--muted);
     }
 
+        /* Draggable Panel Resizers (Sidebar & Split Pane Divider) */
+    .panel-resizer {
+      width: 6px;
+      min-width: 6px;
+      margin: 0 -3px;
+      background: transparent;
+      cursor: col-resize;
+      position: relative;
+      z-index: 25;
+      flex-shrink: 0;
+      user-select: none;
+      touch-action: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color var(--transition-fast);
+    }
+
+    .panel-resizer::after {
+      content: "";
+      width: 2px;
+      height: 32px;
+      border-radius: 2px;
+      background: var(--border-strong);
+      opacity: 0;
+      transition: opacity var(--transition-fast), background-color var(--transition-fast), height var(--transition-fast);
+    }
+
+    .panel-resizer:hover::after,
+    .panel-resizer.dragging::after {
+      opacity: 1;
+      height: 48px;
+      background: var(--accent);
+    }
+
+    .panel-resizer:hover,
+    .panel-resizer.dragging {
+      background: var(--accent-soft);
+    }
+
+    body.is-resizing-panels,
+    body.is-resizing-panels * {
+      cursor: col-resize !important;
+      user-select: none !important;
+    }
+
+    .outline-sidebar.collapsed + #sidebarResizer {
+      display: none !important;
+    }
+
+    .panes-container[data-mode="read"] #splitPaneResizer,
+    .panes-container[data-mode="source"] #splitPaneResizer {
+      display: none !important;
+    }
+
+    /* Highlighted Source Lines During Two-Way Rendered Editing */
+    .cm-editor .cm-line.cm-synced-edit-line {
+      background-color: var(--accent-soft) !important;
+      box-shadow: inset 3px 0 0 var(--accent);
+    }
+
+    .gutter-line-num.synced-range {
+      color: var(--accent) !important;
+      font-weight: 600 !important;
+      background-color: var(--accent-soft) !important;
+      box-shadow: inset 3px 0 0 var(--accent);
+    }
+
     /* Responsive Breakpoints */
     @media (max-width: 768px) {
       .outline-sidebar {
@@ -1649,7 +1718,7 @@
         padding: 0 !important;
         display: block !important;
       }
-      .top-toolbar, .outline-sidebar, .source-pane, .status-bar, .find-bar, .md-block-badge, .zen-exit-pill, .pane-subbar {
+      .top-toolbar, .outline-sidebar, .source-pane, .status-bar, .find-bar, .md-block-badge, .zen-exit-pill, .pane-subbar, .panel-resizer {
         display: none !important;
       }
       .markdown-document {
@@ -1855,6 +1924,7 @@
           <div id="recentFilesList"></div>
         </div>
       </aside>
+      <div id="sidebarResizer" class="panel-resizer hide-mobile" role="separator" aria-orientation="vertical" aria-label="Resize outline sidebar" title="Drag to resize sidebar (Double-click to reset)"></div>
 
       <!-- Dual Synchronized Panes -->
       <div id="panesContainer" class="panes-container" data-mode="split">
@@ -1875,6 +1945,7 @@
             </div>
           </div>
         </section>
+        <div id="splitPaneResizer" class="panel-resizer hide-mobile" role="separator" aria-orientation="vertical" aria-label="Resize source and rendered panes" title="Drag to resize panes (Double-click to reset 50/50)"></div>
 
         <!-- Right: Rendered Editorial View (Direct Live Editing + Markdown Drawer) -->
         <section class="rendered-pane" aria-label="Rendered Document View">
@@ -2104,6 +2175,8 @@
       dirty: false,
       activeBlockIndex: null,
       activeSourceLine: 0,
+      activeEditStartLine: null,
+      activeEditEndLine: null,
       findQuery: '',
       findMatches: [],
       findCurrentIndex: 0,
@@ -2309,7 +2382,9 @@
         measure: 'comfortable',
         showLineNumbers: true,
         outlineOpen: window.innerWidth > 960,
-        viewMode: window.innerWidth <= 768 ? 'read' : 'split'
+        viewMode: window.innerWidth <= 768 ? 'read' : 'split',
+        sidebarWidth: 248,
+        splitRatio: 50
       };
     }
 
@@ -2370,15 +2445,41 @@
       }
       scheduleFallbackGutterUpdate();
 
-      // Sync Outline Sidebar
+      // Update Dynamic Favicon Accent Color
+      const fav = document.getElementById('appFavicon');
+      if (fav) {
+        const encAccent = encodeURIComponent(s.accent || '#B84A27');
+        const bgHex = s.theme === 'light' ? '%231C1917' : '%23232220';
+        fav.href = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='${bgHex}'/%3E%3Cpath d='M8.5 8h4.2l3.8 11.2L20.3 8h3.7l-6.2 16.5h-3.6L8.5 8z' fill='%23FAF7F2'/%3E%3Crect x='22.5' y='20.5' width='4' height='4' rx='1' fill='${encAccent}'/%3E%3C/svg%3E`;
+      }
+
+      // Sync Outline Sidebar & Custom Width
       const sidebar = document.getElementById('outlineSidebar');
       const btnOutline = document.getElementById('btnToggleOutline');
-      if (sidebar) sidebar.classList.toggle('collapsed', !s.outlineOpen);
+      const sw = Math.max(180, Math.min(480, Number(s.sidebarWidth) || 248));
+      if (sidebar) {
+        sidebar.style.width = `${sw}px`;
+        sidebar.style.minWidth = `${sw}px`;
+        sidebar.style.marginLeft = s.outlineOpen ? '0px' : `-${sw}px`;
+        sidebar.classList.toggle('collapsed', !s.outlineOpen);
+      }
       if (btnOutline) btnOutline.classList.toggle('active', !!s.outlineOpen);
 
-      // Sync View Mode
+      // Sync View Mode & Custom Split Ratio
       const panes = document.getElementById('panesContainer');
       if (panes) panes.setAttribute('data-mode', s.viewMode);
+      const sourcePaneEl = document.querySelector('.source-pane');
+      const renderedPaneEl = document.querySelector('.rendered-pane');
+      if (sourcePaneEl && renderedPaneEl) {
+        if (s.viewMode === 'split') {
+          const ratio = Math.max(20, Math.min(80, Number(s.splitRatio) || 50));
+          sourcePaneEl.style.flex = `0 0 ${ratio}%`;
+          renderedPaneEl.style.flex = '1 1 0%';
+        } else {
+          sourcePaneEl.style.flex = '1 1 100%';
+          renderedPaneEl.style.flex = '1 1 100%';
+        }
+      }
       document.querySelectorAll('.mode-btn').forEach(btn => {
         btn.classList.toggle('active', btn.getAttribute('data-mode-target') === s.viewMode);
       });
@@ -2595,6 +2696,8 @@
             const statActive = document.getElementById('statActiveBlock');
             if (statActive) statActive.textContent = `Editing L${currentStartLine + 1}–${currentEndLine}`;
             wrapper.classList.add('active-sync-block');
+            syncSourceEditorBuffer(state.sourceText, currentStartLine, currentEndLine);
+            scrollSourceToLine(currentStartLine, currentEndLine, true);
           });
 
           contentDiv.addEventListener('input', () => {
@@ -2605,17 +2708,21 @@
             blk.raw = newMd;
             blk.endLine = currentEndLine;
 
-            // Update source buffer and CodeMirror/Textarea immediately and auto-scroll Source to the edited line
+            // Update source buffer in-place without jumping scroll, and keep edited lines highlighted
             state.sourceText = updatedSource;
             state.dirty = state.sourceText !== state.savedText;
             updateDirtyIndicator();
             updateStatusBar(updatedSource);
-            syncSourceEditorBuffer(updatedSource);
-            scrollSourceToLine(currentStartLine);
+            syncSourceEditorBuffer(updatedSource, currentStartLine, currentEndLine);
+            scrollSourceToLine(currentStartLine, currentEndLine, false);
           });
 
           contentDiv.addEventListener('blur', () => {
             wrapper.classList.remove('active-sync-block');
+            state.activeEditStartLine = null;
+            state.activeEditEndLine = null;
+            applyCodeMirrorLineHighlights();
+            scheduleFallbackGutterUpdate();
             const statActive = document.getElementById('statActiveBlock');
             if (statActive) statActive.textContent = 'Ready';
             state.undoStack.push(state.sourceText);
@@ -2752,8 +2859,10 @@
       const lineCount = Math.max(3, splitLines(originalRaw).length + 1);
       textarea.rows = Math.min(18, lineCount);
       textarea.focus();
+      syncSourceEditorBuffer(state.sourceText, currentStart, currentEnd);
+      scrollSourceToLine(currentStart, currentEnd, true);
 
-      // Real-time keystroke sync to Source Editor & auto-scroll Source to edited line
+      // Real-time keystroke sync to Source Editor without scroll oscillation
       textarea.addEventListener('input', () => {
         const nextRaw = textarea.value;
         const updatedSource = spliceMarkdownBlock(state.sourceText, currentStart, currentEnd, nextRaw);
@@ -2762,14 +2871,17 @@
         state.dirty = state.sourceText !== state.savedText;
         updateDirtyIndicator();
         updateStatusBar(updatedSource);
-        syncSourceEditorBuffer(updatedSource);
-        scrollSourceToLine(currentStart);
+        syncSourceEditorBuffer(updatedSource, currentStart, currentEnd);
+        scrollSourceToLine(currentStart, currentEnd, false);
       });
 
       const commitBlockChange = () => {
         const nextRaw = textarea.value;
         const updatedSource = spliceMarkdownBlock(state.sourceText, currentStart, currentEnd, nextRaw);
         state.activeBlockIndex = null;
+        state.activeEditStartLine = null;
+        state.activeEditEndLine = null;
+        applyCodeMirrorLineHighlights();
         if (statActive) statActive.textContent = 'Ready';
         applySourceChange(updatedSource, 'rendered-block-edit', true);
         renderDocument();
@@ -2778,6 +2890,9 @@
       const cancelBlockChange = () => {
         const revertedSource = spliceMarkdownBlock(state.sourceText, currentStart, currentEnd, originalRaw);
         state.activeBlockIndex = null;
+        state.activeEditStartLine = null;
+        state.activeEditEndLine = null;
+        applyCodeMirrorLineHighlights();
         if (statActive) statActive.textContent = 'Ready';
         state.sourceText = revertedSource;
         syncSourceEditorBuffer(revertedSource);
@@ -3096,7 +3211,8 @@
       if (lineCount > 1000) {
         const html = [];
         for (let i = 0; i < lineCount; i++) {
-          const activeCls = i === state.activeSourceLine ? ' active' : '';
+          const inSyncRange = state.activeEditStartLine !== null && i >= state.activeEditStartLine && i < (state.activeEditEndLine || state.activeEditStartLine + 1);
+          const activeCls = inSyncRange ? ' synced-range' : (i === state.activeSourceLine ? ' active' : '');
           html.push(`<div class="gutter-line-num${activeCls}" data-line-idx="${i}">${i + 1}</div>`);
         }
         fallbackGutter.innerHTML = html.join('');
@@ -3119,7 +3235,8 @@
       for (let i = 0; i < lineCount; i++) {
         const h = children[i] ? children[i].offsetHeight : 0;
         const styleAttr = h > 0 ? ` style="height:${h}px"` : '';
-        const activeCls = i === state.activeSourceLine ? ' active' : '';
+        const inSyncRange = state.activeEditStartLine !== null && i >= state.activeEditStartLine && i < (state.activeEditEndLine || state.activeEditStartLine + 1);
+        const activeCls = inSyncRange ? ' synced-range' : (i === state.activeSourceLine ? ' active' : '');
         html.push(`<div class="gutter-line-num${activeCls}" data-line-idx="${i}"${styleAttr}>${i + 1}</div>`);
       }
       fallbackGutter.innerHTML = html.join('');
@@ -3188,30 +3305,101 @@
       });
     }
 
-    function syncSourceEditorBuffer(newText) {
+    function syncSourceEditorBuffer(newText, highlightStartLine = null, highlightEndLine = null) {
       isUpdatingEditorProgrammatically = true;
       try {
+        if (highlightStartLine !== null) {
+          state.activeEditStartLine = highlightStartLine;
+          state.activeEditEndLine = highlightEndLine !== null ? highlightEndLine : highlightStartLine + 1;
+          state.activeSourceLine = highlightStartLine;
+        }
+
         if (cmView) {
           const currentDoc = cmView.state.doc.toString();
           if (currentDoc !== newText) {
-            const cursorOffset = Math.min(cmView.state.selection.main.head, newText.length);
+            const scroller = cmView.scrollDOM;
+            const savedScrollTop = scroller ? scroller.scrollTop : 0;
+
+            // Compute minimal diff range so CodeMirror only updates the edited block and never resets scroll to top
+            let prefixLen = 0;
+            const minLen = Math.min(currentDoc.length, newText.length);
+            while (prefixLen < minLen && currentDoc.charCodeAt(prefixLen) === newText.charCodeAt(prefixLen)) {
+              prefixLen++;
+            }
+            let oldSuffix = currentDoc.length;
+            let newSuffix = newText.length;
+            while (oldSuffix > prefixLen && newSuffix > prefixLen && currentDoc.charCodeAt(oldSuffix - 1) === newText.charCodeAt(newSuffix - 1)) {
+              oldSuffix--;
+              newSuffix--;
+            }
+
+            let targetAnchor = cmView.state.selection.main.head;
+            if (highlightStartLine !== null) {
+              // Place CodeMirror active line cursor on the line being edited in Rendered View
+              targetAnchor = prefixLen;
+            } else {
+              targetAnchor = Math.min(targetAnchor, newText.length);
+            }
+
             cmView.dispatch({
-              changes: { from: 0, to: currentDoc.length, insert: newText },
-              selection: { anchor: cursorOffset }
+              changes: { from: prefixLen, to: oldSuffix, insert: newText.slice(prefixLen, newSuffix) },
+              selection: { anchor: Math.min(targetAnchor, newText.length) },
+              scrollIntoView: false
             });
+
+            if (scroller) {
+              scroller.scrollTop = savedScrollTop;
+            }
+          } else if (highlightStartLine !== null) {
+            const lineNumClamped = Math.max(1, Math.min(highlightStartLine + 1, cmView.state.doc.lines));
+            const lineFrom = cmView.state.doc.line(lineNumClamped).from;
+            const scroller = cmView.scrollDOM;
+            const savedScrollTop = scroller ? scroller.scrollTop : 0;
+            cmView.dispatch({
+              selection: { anchor: lineFrom },
+              scrollIntoView: false
+            });
+            if (scroller) scroller.scrollTop = savedScrollTop;
           }
+          applyCodeMirrorLineHighlights();
         }
+
         if (fallbackTextarea && fallbackTextarea.value !== newText) {
+          const savedScrollTop = fallbackTextarea.scrollTop;
           const start = fallbackTextarea.selectionStart;
           const end = fallbackTextarea.selectionEnd;
           fallbackTextarea.value = newText;
+          fallbackTextarea.scrollTop = savedScrollTop;
+          if (fallbackGutter) fallbackGutter.scrollTop = savedScrollTop;
           scheduleFallbackGutterUpdate();
           if (document.activeElement === fallbackTextarea) {
             fallbackTextarea.setSelectionRange(Math.min(start, newText.length), Math.min(end, newText.length));
           }
+        } else if (fallbackTextarea && highlightStartLine !== null) {
+          scheduleFallbackGutterUpdate();
         }
       } finally {
         isUpdatingEditorProgrammatically = false;
+      }
+    }
+
+    function applyCodeMirrorLineHighlights() {
+      if (!cmView) return;
+      const domLines = cmView.contentDOM.querySelectorAll('.cm-line');
+      domLines.forEach(el => el.classList.remove('cm-synced-edit-line'));
+      if (state.activeEditStartLine === null) return;
+
+      const sLine = Math.max(1, Math.min(state.activeEditStartLine + 1, cmView.state.doc.lines));
+      const eLine = Math.max(sLine, Math.min(state.activeEditEndLine || sLine, cmView.state.doc.lines));
+      for (let ln = sLine; ln <= eLine; ln++) {
+        try {
+          const pos = cmView.state.doc.line(ln).from;
+          const domInfo = cmView.domAtPos(pos);
+          const lineEl = domInfo && domInfo.node
+            ? (domInfo.node.nodeType === 1 ? domInfo.node : domInfo.node.parentElement)?.closest('.cm-line')
+            : null;
+          if (lineEl) lineEl.classList.add('cm-synced-edit-line');
+        } catch (_) {}
       }
     }
 
@@ -3246,6 +3434,11 @@
         const fallbackWrap = document.getElementById('fallbackEditorWrap');
 
         const updateListener = EditorView.updateListener.of((update) => {
+          if (update.focusChanged && update.view.hasFocus) {
+            state.activeEditStartLine = null;
+            state.activeEditEndLine = null;
+            applyCodeMirrorLineHighlights();
+          }
           if (update.docChanged && !isUpdatingEditorProgrammatically) {
             const text = update.state.doc.toString();
             applySourceChange(text, 'source-editor');
@@ -3329,18 +3522,41 @@
       }
     }
 
-    // Automatically scroll Source Editor to the line corresponding to the edited Rendered block
-    function scrollSourceToLine(lineNumber) {
-      const totalLines = Math.max(1, splitLines(state.sourceText).length);
-      const ratio = Math.max(0, Math.min(1, lineNumber / totalLines));
+    // Keep the edited source line visible and highlighted without oscillating or resetting scroll
+    function scrollSourceToLine(lineNumber, endLineNumber = null, forceCenter = false) {
+      state.activeEditStartLine = lineNumber;
+      state.activeEditEndLine = endLineNumber !== null ? endLineNumber : lineNumber + 1;
+      state.activeSourceLine = lineNumber;
+
       if (cmView) {
-        const scroller = cmView.scrollDOM;
-        const targetTop = Math.max(0, ratio * (scroller.scrollHeight - scroller.clientHeight));
-        scroller.scrollTo({ top: targetTop, behavior: 'smooth' });
+        try {
+          const lineNumClamped = Math.max(1, Math.min(lineNumber + 1, cmView.state.doc.lines));
+          const linePos = cmView.state.doc.line(lineNumClamped).from;
+          const scroller = cmView.scrollDOM;
+          const blockInfo = cmView.lineBlockAt(linePos);
+          if (scroller && blockInfo) {
+            const viewTop = scroller.scrollTop;
+            const viewBottom = viewTop + scroller.clientHeight;
+            const margin = scroller.clientHeight * 0.22;
+            if (forceCenter || blockInfo.top < viewTop + margin || blockInfo.bottom > viewBottom - margin) {
+              const targetTop = Math.max(0, blockInfo.top - scroller.clientHeight * 0.35);
+              scroller.scrollTop = targetTop;
+            }
+          }
+          applyCodeMirrorLineHighlights();
+        } catch (_) {}
       } else if (fallbackTextarea) {
-        const targetTop = Math.max(0, ratio * (fallbackTextarea.scrollHeight - fallbackTextarea.clientHeight));
-        fallbackTextarea.scrollTo({ top: targetTop, behavior: 'smooth' });
-        if (fallbackGutter) fallbackGutter.scrollTop = targetTop;
+        const totalLines = Math.max(1, splitLines(state.sourceText).length);
+        const approxLineY = (lineNumber / totalLines) * fallbackTextarea.scrollHeight;
+        const viewTop = fallbackTextarea.scrollTop;
+        const viewBottom = viewTop + fallbackTextarea.clientHeight;
+        const margin = fallbackTextarea.clientHeight * 0.22;
+        if (forceCenter || approxLineY < viewTop + margin || approxLineY > viewBottom - margin) {
+          const targetTop = Math.max(0, approxLineY - fallbackTextarea.clientHeight * 0.35);
+          fallbackTextarea.scrollTop = targetTop;
+          if (fallbackGutter) fallbackTextarea.scrollTop = targetTop;
+        }
+        scheduleFallbackGutterUpdate();
       }
     }
 
@@ -3993,6 +4209,86 @@ ${cleanHtml}
       renderDocument();
       renderRecentFilesUI();
       initCodeMirror6();
+    }
+
+    // --- Interactive Panel Resizers (Outline Sidebar & Split View Divider) ---
+    const sidebarResizerEl = document.getElementById('sidebarResizer');
+    const splitPaneResizerEl = document.getElementById('splitPaneResizer');
+
+    if (sidebarResizerEl) {
+      sidebarResizerEl.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        sidebarResizerEl.setPointerCapture(e.pointerId);
+        sidebarResizerEl.classList.add('dragging');
+        document.body.classList.add('is-resizing-panels');
+
+        const workspaceRect = document.querySelector('.workspace-main').getBoundingClientRect();
+
+        const onPointerMove = (moveEvent) => {
+          const newWidth = Math.max(180, Math.min(480, moveEvent.clientX - workspaceRect.left));
+          state.settings.sidebarWidth = Math.round(newWidth);
+          applySettings();
+        };
+
+        const onPointerUp = () => {
+          sidebarResizerEl.classList.remove('dragging');
+          document.body.classList.remove('is-resizing-panels');
+          sidebarResizerEl.removeEventListener('pointermove', onPointerMove);
+          sidebarResizerEl.removeEventListener('pointerup', onPointerUp);
+          sidebarResizerEl.removeEventListener('pointercancel', onPointerUp);
+          scheduleFallbackGutterUpdate();
+        };
+
+        sidebarResizerEl.addEventListener('pointermove', onPointerMove);
+        sidebarResizerEl.addEventListener('pointerup', onPointerUp);
+        sidebarResizerEl.addEventListener('pointercancel', onPointerUp);
+      });
+
+      sidebarResizerEl.addEventListener('dblclick', () => {
+        state.settings.sidebarWidth = 248;
+        applySettings();
+        showToast('Reset sidebar width');
+      });
+    }
+
+    if (splitPaneResizerEl) {
+      splitPaneResizerEl.addEventListener('pointerdown', (e) => {
+        if (state.settings.viewMode !== 'split') return;
+        e.preventDefault();
+        splitPaneResizerEl.setPointerCapture(e.pointerId);
+        splitPaneResizerEl.classList.add('dragging');
+        document.body.classList.add('is-resizing-panels');
+
+        const panesEl = document.getElementById('panesContainer');
+
+        const onPointerMove = (moveEvent) => {
+          const rect = panesEl.getBoundingClientRect();
+          if (rect.width <= 0) return;
+          const pct = ((moveEvent.clientX - rect.left) / rect.width) * 100;
+          state.settings.splitRatio = Math.round(Math.max(20, Math.min(80, pct)) * 10) / 10;
+          applySettings();
+        };
+
+        const onPointerUp = () => {
+          splitPaneResizerEl.classList.remove('dragging');
+          document.body.classList.remove('is-resizing-panels');
+          splitPaneResizerEl.removeEventListener('pointermove', onPointerMove);
+          splitPaneResizerEl.removeEventListener('pointerup', onPointerUp);
+          splitPaneResizerEl.removeEventListener('pointercancel', onPointerUp);
+          scheduleFallbackGutterUpdate();
+        };
+
+        splitPaneResizerEl.addEventListener('pointermove', onPointerMove);
+        splitPaneResizerEl.addEventListener('pointerup', onPointerUp);
+        splitPaneResizerEl.addEventListener('pointercancel', onPointerUp);
+      });
+
+      splitPaneResizerEl.addEventListener('dblclick', () => {
+        state.settings.splitRatio = 50;
+        applySettings();
+        scheduleFallbackGutterUpdate();
+        showToast('Reset split panes to 50 / 50');
+      });
     }
 
     initApp();
